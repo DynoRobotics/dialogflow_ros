@@ -1,0 +1,3 @@
+<launch>
+  <node name="dialogflow_node" pkg="dialogflow_ros" type="dialogflow_node" output='screen'/>
+</launch>

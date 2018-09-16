@@ -1,3 +1,10 @@
 <launch>
-  <node name="dialogflow_node" pkg="dialogflow_ros" type="dialogflow_node" output='screen'/>
+  <node name="dialogflow_node" pkg="dialogflow_ros" type="dialogflow_node" output='screen'>
+    <rosparam>
+      project_id: dynotestsample
+      default_language: sv
+    </rosparam>
+  </node>
+
+  <node name="audio_from_file_publisher" pkg="dialogflow_ros" type="audio_from_file_publisher"/>
 </launch>

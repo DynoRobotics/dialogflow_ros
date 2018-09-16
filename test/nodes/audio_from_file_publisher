@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+#
+# License: BSD
+#   https://raw.githubusercontent.com/samiamlabs/dyno/master/LICENCE
+#
+
+import rospy
+import rospkg
+
+from std_srvs.srv import Empty, EmptyResponse
+from dialogflow_ros.msg import AudioChunk
+
+import threading
+
+
+class AudioFromFilePublisher:
+    def __init__(self):
+        rospy.init_node('audio_from_file_publisher')
+
+        self.audio_pub = rospy.Publisher('audio', AudioChunk, queue_size=10)
+        self.read_file_service = rospy.Service('read_file', Empty(), self.handle_read_file)
+
+        self.audio_file_folder_path = rospkg.RosPack().get_path('dialogflow_ros') + '/test/audio_files/'
+
+        self.read_lock = threading.RLock()
+
+    def handle_read_file(self, request):
+        audio_file_path = self.audio_file_folder_path + 'book_a_room.wav'
+        with self.read_lock:
+            with open(audio_file_path, 'rb') as audio_file:
+                while True:
+                    audio_chunk_msg = AudioChunk(data=audio_file.read(4069))
+
+                    if not audio_chunk_msg.data:
+                        break
+
+                    self.audio_pub.publish(audio_chunk_msg)
+
+        return EmptyResponse()
+
+if __name__ == '__main__':
+    audio_from_file_publisher = AudioFromFilePublisher()
+    rospy.spin()

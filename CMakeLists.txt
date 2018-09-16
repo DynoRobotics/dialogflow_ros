@@ -7,6 +7,7 @@ add_message_files(
   DIRECTORY
     msg
   FILES
+    AudioChunk.msg
     QueryResult.msg
     Intent.msg
 )

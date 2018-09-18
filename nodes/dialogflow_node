@@ -9,7 +9,8 @@ import uuid
 import dialogflow_v2 as dialogflow
 
 import std_msgs.msg as std_msgs
-from dialogflow_ros.msg import QueryResult, AudioChunk
+from dialogflow_ros.msg import QueryResult
+from audio_common_msgs.msg import AudioData
 from std_srvs.srv import Empty, EmptyResponse
 
 from collections import deque
@@ -40,7 +41,7 @@ class DialogflowNode:
         self.query_result_pub = rospy.Publisher('query_result', QueryResult, queue_size=10)
 
         rospy.Subscriber('text', std_msgs.String, self.text_callback)
-        rospy.Subscriber('audio', AudioChunk, self.audio_callback)
+        rospy.Subscriber('audio', AudioData, self.audio_callback)
 
     def text_callback(self, text_msg):
         query_result = self.detect_intent_text(text_msg.data)

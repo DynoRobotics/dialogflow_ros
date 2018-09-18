@@ -8,7 +8,7 @@ import rospy
 import rospkg
 
 from std_srvs.srv import Empty, EmptyResponse
-from dialogflow_ros.msg import AudioChunk
+from audio_common_msgs.msg import AudioData
 
 import threading
 
@@ -17,7 +17,7 @@ class AudioFromFilePublisher:
     def __init__(self):
         rospy.init_node('audio_from_file_publisher')
 
-        self.audio_pub = rospy.Publisher('audio', AudioChunk, queue_size=10)
+        self.audio_pub = rospy.Publisher('audio', AudioData, queue_size=10)
         self.read_file_service = rospy.Service('read_file', Empty(), self.handle_read_file)
 
         self.audio_file_folder_path = rospkg.RosPack().get_path('dialogflow_ros') + '/test/audio_files/'
@@ -29,7 +29,7 @@ class AudioFromFilePublisher:
         with self.read_lock:
             with open(audio_file_path, 'rb') as audio_file:
                 while True:
-                    audio_chunk_msg = AudioChunk(data=audio_file.read(4069))
+                    audio_chunk_msg = AudioData(data=audio_file.read(4069))
 
                     if not audio_chunk_msg.data:
                         break

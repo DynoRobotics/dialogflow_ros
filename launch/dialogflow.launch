@@ -1,7 +1,7 @@
 <launch>
   <node name="dialogflow_node" pkg="dialogflow_ros" type="dialogflow_node" output='screen'>
     <rosparam>
-      project_id: dynotestsample
+      project_id: sj-voice
       default_language: sv
     </rosparam>
   </node>

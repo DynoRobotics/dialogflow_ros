@@ -15,17 +15,20 @@ from audio_common_msgs.msg import AudioData
 from std_srvs.srv import Empty, EmptyResponse
 
 from collections import deque
-
+from google.oauth2 import service_account
 
 class DialogflowNode:
     def __init__(self):
         rospy.init_node('dialogflow_node')
 
-        self.project_id = rospy.get_param('~project_id', 'dynotestsample')
+        google_application_credentials = rospy.get_param('~google_application_credentials')
+        credentials = service_account.Credentials.from_service_account_file(google_application_credentials)
+
+        self.project_id = credentials.project_id
         self.session_id = rospy.get_param('~session_id', uuid.uuid4())
         self.default_language = rospy.get_param('~default_language', 'en-US')
 
-        self.session_client = dialogflow.SessionsClient()
+        self.session_client = dialogflow.SessionsClient(credentials=credentials)
         self.session = self.session_client.session_path(self.project_id, self.session_id)
         rospy.loginfo('Session path: {}\n'.format(self.session))
 
@@ -41,8 +44,8 @@ class DialogflowNode:
 
         self.query_result_pub = rospy.Publisher('query_result', QueryResult, queue_size=10)
 
-        rospy.Subscriber('text', std_msgs.String, self.text_callback)
-        rospy.Subscriber('audio', AudioData, self.audio_callback)
+        rospy.Subscriber('/text', std_msgs.String, self.text_callback)
+        rospy.Subscriber('/audio', AudioData, self.audio_callback)
 
     def text_callback(self, text_msg):
         query_result = self.detect_intent_text(text_msg.data)
@@ -69,12 +72,12 @@ class DialogflowNode:
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
 
         rospy.loginfo('=' * 20)
-        rospy.loginfo('Query text: {}'.format(response.query_result.query_text))
+        rospy.loginfo('Query text: {}'.format(response.query_result.query_text.encode('utf-8')))
         rospy.loginfo('Detected intent: {} (confidence: {})\n'.format(
             response.query_result.intent.display_name,
             response.query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
-            response.query_result.fulfillment_text))
+            response.query_result.fulfillment_text.encode('utf-8')))
         return response.query_result
 
     def detect_intent_stream(self):

@@ -1,10 +1,11 @@
 <launch>
+  <arg name="google_application_credentials" default="$(env HOME)/dyno_ac.json"/>
+  <arg name="default_language" default="sv"/>
+
   <node name="dialogflow_node" pkg="dialogflow_ros" type="dialogflow_node" output='screen'>
-    <rosparam>
-      project_id: sj-voice
-      default_language: sv
-    </rosparam>
+      <param name="google_application_credentials" value="$(arg google_application_credentials)"/>
+      <param name="default_language" value="$(arg default_language)"/>
   </node>
 
-  <node name="audio_from_file_publisher" pkg="dialogflow_ros" type="audio_from_file_publisher"/>
+  <!-- <node name="audio_from_file_publisher" pkg="dialogflow_ros" type="audio_from_file_publisher"/> -->
 </launch>

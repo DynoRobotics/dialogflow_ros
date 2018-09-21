@@ -1,3 +1,4 @@
+string project_id
 string transcript
 string fulfillment_text
 float64 intent_detection_confidence

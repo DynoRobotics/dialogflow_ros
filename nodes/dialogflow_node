@@ -17,6 +17,7 @@ from std_srvs.srv import Empty, EmptyResponse
 from collections import deque
 from google.oauth2 import service_account
 
+
 class DialogflowNode:
     def __init__(self):
         rospy.init_node('dialogflow_node')
@@ -51,6 +52,7 @@ class DialogflowNode:
         query_result = self.detect_intent_text(text_msg.data)
 
         query_result_msg = QueryResult()
+        query_result_msg.project_id = self.project_id
         query_result_msg.transcript = text_msg.data
         query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
@@ -100,6 +102,14 @@ class DialogflowNode:
             query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
             query_result.fulfillment_text.encode('utf-8')))
+        query_result_msg = QueryResult()
+        query_result_msg.project_id = self.project_id
+        query_result_msg.transcript = text_msg.data
+        query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
+        query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
+        query_result_msg.intent = query_result.intent
+
+        self.query_result_pub.publish(query_result_msg)
 
     def audio_stream_request_generator(self):
         query_input = dialogflow.types.QueryInput(audio_config=self.audio_config)
@@ -124,6 +134,7 @@ class DialogflowNode:
     def update(self):
         if len(self.audio_chunk_queue) > 0:
             self.detect_intent_stream()
+            # TODO: Publish query_reslut
 
 
 if __name__ == '__main__':

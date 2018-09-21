@@ -10,8 +10,9 @@ import uuid
 import dialogflow_v2 as dialogflow
 
 import std_msgs.msg as std_msgs
-from dialogflow_ros.msg import QueryResult
 from audio_common_msgs.msg import AudioData
+from dialogflow_ros.msg import DialogflowResponse
+
 from std_srvs.srv import Empty, EmptyResponse
 
 from collections import deque
@@ -21,6 +22,10 @@ from google.oauth2 import service_account
 class DialogflowNode:
     def __init__(self):
         rospy.init_node('dialogflow_node')
+
+        if not rospy.has_param('~google_application_credentials'):
+            rospy.logerr("Missing path to credentials file")
+            raise ValueError('Missing path to credentials file')
 
         google_application_credentials = rospy.get_param('~google_application_credentials')
         credentials = service_account.Credentials.from_service_account_file(google_application_credentials)
@@ -43,7 +48,7 @@ class DialogflowNode:
             audio_encoding=audio_encoding, language_code=self.default_language,
             sample_rate_hertz=sample_rate_hertz)
 
-        self.query_result_pub = rospy.Publisher('query_result', QueryResult, queue_size=10)
+        self.query_result_pub = rospy.Publisher('response', DialogflowResponse, queue_size=10)
 
         rospy.Subscriber('/text', std_msgs.String, self.text_callback)
         rospy.Subscriber('/audio', AudioData, self.audio_callback)
@@ -51,7 +56,7 @@ class DialogflowNode:
     def text_callback(self, text_msg):
         query_result = self.detect_intent_text(text_msg.data)
 
-        query_result_msg = QueryResult()
+        query_result_msg = DialogflowResponse()
         query_result_msg.project_id = self.project_id
         query_result_msg.transcript = text_msg.data
         query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
@@ -102,7 +107,7 @@ class DialogflowNode:
             query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
             query_result.fulfillment_text.encode('utf-8')))
-        query_result_msg = QueryResult()
+        query_result_msg = DialogflowResponse()
         query_result_msg.project_id = self.project_id
         query_result_msg.transcript = text_msg.data
         query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')

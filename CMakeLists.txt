@@ -7,7 +7,7 @@ add_message_files(
   DIRECTORY
     msg
   FILES
-    QueryResult.msg
+    DialogflowResponse.msg
     Intent.msg
 )
 

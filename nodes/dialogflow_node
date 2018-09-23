@@ -33,6 +33,7 @@ class DialogflowNode:
         self.project_id = credentials.project_id
         self.session_id = rospy.get_param('~session_id', uuid.uuid4())
         self.default_language = rospy.get_param('~default_language', 'en-US')
+        self.disable_audio = rospy.get_param('~disable_audio', False)
 
         self.session_client = dialogflow.SessionsClient(credentials=credentials)
         self.session = self.session_client.session_path(self.project_id, self.session_id)
@@ -49,11 +50,15 @@ class DialogflowNode:
             sample_rate_hertz=sample_rate_hertz)
 
         self.query_result_pub = rospy.Publisher('response', DialogflowResponse, queue_size=10)
+        self.query_text_pub = rospy.Publisher('query_text', std_msgs.String, queue_size=10)
 
         rospy.Subscriber('/text', std_msgs.String, self.text_callback)
-        rospy.Subscriber('/audio', AudioData, self.audio_callback)
+
+        if not self.disable_audio:
+            rospy.Subscriber('/audio', AudioData, self.audio_callback)
 
     def text_callback(self, text_msg):
+        self.query_text_pub.publish(text_msg)
         query_result = self.detect_intent_text(text_msg.data)
         self.publish_response(query_result)
 
@@ -69,8 +74,7 @@ class DialogflowNode:
             if len(fulfillment_messages) > 0:
                 query_result_msg.fulfillment_text = str(fulfillment_messages[0].text.text).encode('utf-8')
             else:
-                rospy.logwarn("No fulfillment_text can be parsed, dropping message")
-                return
+                rospy.logwarn("No fulfillment_text can be parsed")
         else:
             query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
 
@@ -104,9 +108,13 @@ class DialogflowNode:
         responses = self.session_client.streaming_detect_intent(requests)
 
         rospy.loginfo('=' * 20)
-        for response in responses:
-            rospy.loginfo('Intermediate transcript: "{}".'.format(
-                    response.recognition_result.transcript.encode('utf-8')))
+        try:
+            for response in responses:
+                rospy.loginfo('Intermediate transcript: "{}".'.format(
+                        response.recognition_result.transcript.encode('utf-8')))
+        except:
+            rospy.logerr("Dialogflow exception, out of audio quota?")
+            return
 
         # Note: The result from the last response is the final transcript along
         # with the detected content.
@@ -114,6 +122,8 @@ class DialogflowNode:
 
         if query_result.query_text == "":
             return
+
+        self.query_text_pub.publish(std_msgs.String(data=query_result.query_text.encode('utf-8')))
 
         rospy.loginfo('=' * 20)
         rospy.loginfo('Query text: {}'.format(query_result.query_text.encode('utf-8')))

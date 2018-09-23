@@ -1,10 +1,12 @@
 <launch>
   <arg name="google_application_credentials" default="$(env HOME)/dyno_ac.json"/>
   <arg name="default_language" default="sv"/>
+  <arg name="disable_audio" default="false"/>
 
   <node name="dialogflow_node" pkg="dialogflow_ros" type="dialogflow_node" output='screen'>
       <param name="google_application_credentials" value="$(arg google_application_credentials)"/>
       <param name="default_language" value="$(arg default_language)"/>
+      <param name="disable_audio" value="$(arg disable_audio)"/>
   </node>
 
   <!-- <node name="audio_from_file_publisher" pkg="dialogflow_ros" type="audio_from_file_publisher"/> -->

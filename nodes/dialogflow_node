@@ -69,21 +69,21 @@ class DialogflowNode:
 
         for intent in intents:
             print('=' * 20)
-            print('Intent name: {}'.format(intent.name))
-            print('Intent display_name: {}'.format(intent.display_name))
-            print('Action: {}\n'.format(intent.action))
+            print('Intent name: {}'.format(intent.name.encode('utf-8')))
+            print('Intent display_name: {}'.format(intent.display_name.encode('utf-8')))
+            print('Action: {}\n'.format(intent.action.encode('utf-8')))
             print('Root followup intent: {}'.format(
-                intent.root_followup_intent_name))
+                intent.root_followup_intent_name.encode('utf-8')))
             print('Parent followup intent: {}\n'.format(
-                intent.parent_followup_intent_name))
+                intent.parent_followup_intent_name.encode('utf-8')))
 
             print('Input contexts:')
             for input_context_name in intent.input_context_names:
-                print('\tName: {}'.format(input_context_name))
+                print('\tName: {}'.format(input_context_name.encode('utf-8')))
 
             print('Output contexts:')
             for output_context in intent.output_contexts:
-                print('\tName: {}'.format(output_context.name))
+                print('\tName: {}'.format(output_context.name.encode('utf-8')))
         return EmptyResponse()
 
     def text_callback(self, text_msg):

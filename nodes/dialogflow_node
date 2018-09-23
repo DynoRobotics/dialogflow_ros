@@ -100,6 +100,9 @@ class DialogflowNode:
         # with the detected content.
         query_result = response.query_result
 
+        if query_result.query_text == "":
+            return
+
         rospy.loginfo('=' * 20)
         rospy.loginfo('Query text: {}'.format(query_result.query_text.encode('utf-8')))
         rospy.loginfo('Detected intent: {} (confidence: {})\n'.format(
@@ -110,7 +113,7 @@ class DialogflowNode:
 
         query_result_msg = DialogflowResponse()
         query_result_msg.project_id = self.project_id
-        query_result_msg.transcript = response.recognition_result.transcript
+        query_result_msg.transcript = query_result.query_text
         query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
         query_result_msg.intent = query_result.intent
@@ -122,7 +125,9 @@ class DialogflowNode:
 
         # The first request contains the configuration.
         yield dialogflow.types.StreamingDetectIntentRequest(
-            session=self.session, query_input=query_input, single_utterance=True)
+            session=self.session,
+            query_input=query_input,
+            single_utterance=True)
 
         # Here we are reading small chunks of audio from a dequeue
         while True:

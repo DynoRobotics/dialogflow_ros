@@ -122,7 +122,7 @@ class DialogflowNode:
 
         # The first request contains the configuration.
         yield dialogflow.types.StreamingDetectIntentRequest(
-            session=self.session, query_input=query_input)
+            session=self.session, query_input=query_input, single_utterance=True)
 
         # Here we are reading small chunks of audio from a dequeue
         while True:

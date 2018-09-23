@@ -55,15 +55,27 @@ class DialogflowNode:
 
     def text_callback(self, text_msg):
         query_result = self.detect_intent_text(text_msg.data)
+        self.publish_response(query_result)
 
+    def publish_response(self, query_result):
         query_result_msg = DialogflowResponse()
         query_result_msg.project_id = self.project_id
-        query_result_msg.transcript = text_msg.data
-        query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
+        query_result_msg.transcript = query_result.query_text.encode('utf-8') # text_msg.data
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
         query_result_msg.intent = query_result.intent
 
+        if query_result_msg.fulfillment_text == '':
+            fulfillment_messages = query_result.fulfillment_messages
+            if len(fulfillment_messages) > 0:
+                query_result_msg.fulfillment_text = str(fulfillment_messages[0].text.text).encode('utf-8')
+            else:
+                rospy.logwarn("No fulfillment_text can be parsed, dropping message")
+                return
+        else:
+            query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
+
         self.query_result_pub.publish(query_result_msg)
+
 
     def audio_callback(self, audio_chunk_msg):
         if len(self.audio_chunk_queue) < self.max_queue_size:
@@ -111,14 +123,7 @@ class DialogflowNode:
         rospy.loginfo('Fulfillment text: {}\n'.format(
             query_result.fulfillment_text.encode('utf-8')))
 
-        query_result_msg = DialogflowResponse()
-        query_result_msg.project_id = self.project_id
-        query_result_msg.transcript = query_result.query_text
-        query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
-        query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
-        query_result_msg.intent = query_result.intent
-
-        self.query_result_pub.publish(query_result_msg)
+        self.publish_response(query_result)
 
     def audio_stream_request_generator(self):
         query_input = dialogflow.types.QueryInput(audio_config=self.audio_config)

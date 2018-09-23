@@ -28,14 +28,14 @@ class DialogflowNode:
             raise ValueError('Missing path to credentials file')
 
         google_application_credentials = rospy.get_param('~google_application_credentials')
-        credentials = service_account.Credentials.from_service_account_file(google_application_credentials)
+        self.credentials = service_account.Credentials.from_service_account_file(google_application_credentials)
 
-        self.project_id = credentials.project_id
+        self.project_id = self.credentials.project_id
         self.session_id = rospy.get_param('~session_id', uuid.uuid4())
         self.default_language = rospy.get_param('~default_language', 'en-US')
         self.disable_audio = rospy.get_param('~disable_audio', False)
 
-        self.session_client = dialogflow.SessionsClient(credentials=credentials)
+        self.session_client = dialogflow.SessionsClient(credentials=self.credentials)
         self.session = self.session_client.session_path(self.project_id, self.session_id)
         rospy.loginfo('Session path: {}\n'.format(self.session))
 
@@ -56,6 +56,35 @@ class DialogflowNode:
 
         if not self.disable_audio:
             rospy.Subscriber('/audio', AudioData, self.audio_callback)
+
+        self.list_intents_sevice = rospy.Service(
+                'list_intents',
+                Empty,
+                self.handle_list_intents)
+
+    def handle_list_intents(self, request):
+        intents_client = dialogflow.IntentsClient(credentials=self.credentials)
+        parent = intents_client.project_agent_path(self.project_id)
+        intents = intents_client.list_intents(parent)
+
+        for intent in intents:
+            print('=' * 20)
+            print('Intent name: {}'.format(intent.name))
+            print('Intent display_name: {}'.format(intent.display_name))
+            print('Action: {}\n'.format(intent.action))
+            print('Root followup intent: {}'.format(
+                intent.root_followup_intent_name))
+            print('Parent followup intent: {}\n'.format(
+                intent.parent_followup_intent_name))
+
+            print('Input contexts:')
+            for input_context_name in intent.input_context_names:
+                print('\tName: {}'.format(input_context_name))
+
+            print('Output contexts:')
+            for output_context in intent.output_contexts:
+                print('\tName: {}'.format(output_context.name))
+        return EmptyResponse()
 
     def text_callback(self, text_msg):
         self.query_text_pub.publish(text_msg)

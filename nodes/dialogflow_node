@@ -68,22 +68,22 @@ class DialogflowNode:
         intents = intents_client.list_intents(parent)
 
         for intent in intents:
-            print('=' * 20)
-            print('Intent name: {}'.format(intent.name.encode('utf-8')))
-            print('Intent display_name: {}'.format(intent.display_name.encode('utf-8')))
-            print('Action: {}\n'.format(intent.action.encode('utf-8')))
-            print('Root followup intent: {}'.format(
+            rospy.loginfo('=' * 20)
+            rospy.loginfo('Intent name: {}'.format(intent.name.encode('utf-8')))
+            rospy.loginfo('Intent display_name: {}'.format(intent.display_name.encode('utf-8')))
+            rospy.loginfo('Action: {}\n'.format(intent.action.encode('utf-8')))
+            rospy.loginfo('Root followup intent: {}'.format(
                 intent.root_followup_intent_name.encode('utf-8')))
-            print('Parent followup intent: {}\n'.format(
+            rospy.loginfo('Parent followup intent: {}\n'.format(
                 intent.parent_followup_intent_name.encode('utf-8')))
 
-            print('Input contexts:')
+            rospy.loginfo('Input contexts:')
             for input_context_name in intent.input_context_names:
-                print('\tName: {}'.format(input_context_name.encode('utf-8')))
+                rospy.loginfo('\tName: {}'.format(input_context_name.encode('utf-8')))
 
-            print('Output contexts:')
+            rospy.loginfo('Output contexts:')
             for output_context in intent.output_contexts:
-                print('\tName: {}'.format(output_context.name.encode('utf-8')))
+                rospy.loginfo('\tName: {}'.format(output_context.name.encode('utf-8')))
         return EmptyResponse()
 
     def text_callback(self, text_msg):

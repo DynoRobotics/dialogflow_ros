@@ -62,6 +62,16 @@ class DialogflowNode:
                 Empty,
                 self.handle_list_intents)
 
+        self.list_context_sevice = rospy.Service(
+                'list_context',
+                Empty,
+                self.handle_list_context)
+
+        self.list_context_sevice = rospy.Service(
+                'clear_context',
+                Empty,
+                self.handle_clear_context)
+
     def handle_list_intents(self, request):
         intents_client = dialogflow.IntentsClient(credentials=self.credentials)
         parent = intents_client.project_agent_path(self.project_id)
@@ -85,6 +95,28 @@ class DialogflowNode:
             for output_context in intent.output_contexts:
                 rospy.loginfo('\tName: {}'.format(output_context.name.encode('utf-8')))
         return EmptyResponse()
+
+    def handle_list_context(self, request):
+        contexts_client = dialogflow.ContextsClient(credentials=self.credentials)
+        contexts = contexts_client.list_contexts(self.session)
+
+        rospy.loginfo('Contexts for session {}:\n'.format(self.session))
+        for context in contexts:
+            rospy.loginfo('Context name: {}'.format(context.name))
+            rospy.loginfo('Lifespan count: {}'.format(context.lifespan_count))
+            rospy.loginfo('Fields:')
+            for field, value in context.parameters.fields.items():
+                if value.string_value:
+                    rospy.loginfo('\t{}: {}'.format(field, value))
+        return EmptyResponse()
+
+    def handle_clear_context(self, request):
+        contexts_client = dialogflow.ContextsClient(credentials=self.credentials)
+        contexts = contexts_client.list_contexts(self.session)
+        for context in contexts:
+            contexts_client.delete_context(context.name)
+        return EmptyResponse()
+
 
     def text_callback(self, text_msg):
         self.query_text_pub.publish(text_msg)
@@ -121,6 +153,8 @@ class DialogflowNode:
         text_input = dialogflow.types.TextInput(text=text, language_code=self.default_language)
         query_input = dialogflow.types.QueryInput(text=text_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
+
+        rospy.loginfo(response)
 
         rospy.loginfo('=' * 20)
         rospy.loginfo('Query text: {}'.format(response.query_result.query_text.encode('utf-8')))

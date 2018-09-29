@@ -154,8 +154,6 @@ class DialogflowNode:
         query_input = dialogflow.types.QueryInput(text=text_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
 
-        rospy.loginfo(response)
-
         rospy.loginfo('=' * 20)
         rospy.loginfo('Query text: {}'.format(response.query_result.query_text.encode('utf-8')))
         rospy.loginfo('Detected intent: {} (confidence: {})\n'.format(

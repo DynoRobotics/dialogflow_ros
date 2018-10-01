@@ -137,7 +137,7 @@ class DialogflowNode:
             else:
                 rospy.logwarn("No fulfillment_text can be parsed")
         else:
-            query_result_msg.fulfillment_text = str(query_result.fulfillment_text.encode('utf-8'))
+            query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
 
         self.query_result_pub.publish(query_result_msg)
 

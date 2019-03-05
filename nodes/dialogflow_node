@@ -173,7 +173,7 @@ class DialogflowNode:
                 rospy.loginfo('Intermediate transcript: "{}".'.format(
                         response.recognition_result.transcript.encode('utf-8')))
         except:
-            rospy.logerr("Dialogflow exception, out of audio quota? (project_id: %s)", self.project_id)
+            rospy.logerr("Dialogflow exception. Out of audio quota? No internet connection (project_id: %s)", self.project_id)
             return
 
         # Note: The result from the last response is the final transcript along

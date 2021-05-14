@@ -1,2 +1,8 @@
 string key
-string value
+string[] value  # Only one item if single-valued, otherwise list 
+
+
+
+
+
+

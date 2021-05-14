@@ -14,7 +14,7 @@ from google.cloud import dialogflow
 from std_msgs.msg import String, Bool
 from qt_robot_interface.srv import speech_say
 from audio_common_msgs.msg import AudioData
-from dialogflow_ros.msg import DialogflowResponse
+from dialogflow_ros.msg import Response, Intent, Event, Context, Parameter
 
 from std_srvs.srv import Empty, EmptyResponse
 
@@ -43,7 +43,7 @@ class DialogflowNode:
             sample_rate_hertz=sample_rate_hertz,
             single_utterance=True)
 
-        self.query_result_pub = rospy.Publisher('response', DialogflowResponse, queue_size=10)
+        self.query_result_pub = rospy.Publisher('response', Response, queue_size=10)
         self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
         self.record_pub = rospy.Publisher('is_recording', Bool, queue_size=1, latch=True)
         
@@ -123,11 +123,12 @@ class DialogflowNode:
         self.publish_response(query_result)
 
     def publish_response(self, query_result):
-        query_result_msg = DialogflowResponse()
+        query_result_msg = Response()
         query_result_msg.project_id = self.project_id
-        query_result_msg.transcript = query_result.query_text # text_msg.data
+        query_result_msg.query_text = query_result.query_text # text_msg.data
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
-        query_result_msg.intent = query_result.intent
+        query_result_msg.intent.display_name = query_result.intent.display_name
+        query_result_msg.intent.name = query_result.intent.name
 
         if not query_result.fulfillment_text:
             fulfillment_messages = query_result.fulfillment_messages
@@ -137,6 +138,33 @@ class DialogflowNode:
                 rospy.logwarn("No fulfillment_text can be parsed")
         else:
             query_result_msg.fulfillment_text = query_result.fulfillment_text
+
+        for key in query_result.parameters:
+            p_msg = Parameter()
+            p_msg.key = key
+            value = query_result.parameters.get(key)
+            if isinstance(value, str):
+                p_msg.value = [value]
+            else:
+                p_msg.value = value
+            query_result_msg.parameters.append(p_msg)
+
+        for ctx in query_result.output_contexts:
+            name = ctx.name.split("/")[-1]
+            if not name.startswith("__"):
+                c_msg = Context()
+                c_msg.name = name
+                if ctx.parameters:
+                    for key in ctx.parameters:
+                        p_msg = Parameter()
+                        p_msg.key = key
+                        value = ctx.parameters.get(key)
+                        if isinstance(value, str):
+                            p_msg.value = [value]
+                        else:
+                            p_msg.value = value
+                        c_msg.parameters.append(p_msg)
+                query_result_msg.output_contexts.append(c_msg)
 
         self.query_result_pub.publish(query_result_msg)
         self.record_pub.publish(False)

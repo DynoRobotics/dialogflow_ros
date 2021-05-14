@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # License: BSD
@@ -7,56 +7,55 @@
 
 import rospy
 import uuid
-import dialogflow_v2 as dialogflow
+import time
+import queue#from collections import deque
+from google.cloud import dialogflow
 
-import std_msgs.msg as std_msgs
+from std_msgs.msg import String, Bool
+from qt_robot_interface.srv import speech_say
 from audio_common_msgs.msg import AudioData
 from dialogflow_ros.msg import DialogflowResponse
 
 from std_srvs.srv import Empty, EmptyResponse
 
-from collections import deque
-from google.oauth2 import service_account
-
-
 class DialogflowNode:
     def __init__(self):
         rospy.init_node('dialogflow_node')
 
-        if not rospy.has_param('~google_application_credentials'):
-            rospy.logerr("Missing path to credentials file")
-            raise ValueError('Missing path to credentials file')
-
-        google_application_credentials = rospy.get_param('~google_application_credentials')
-        self.credentials = service_account.Credentials.from_service_account_file(google_application_credentials)
-
-        self.project_id = self.credentials.project_id
+        self.project_id = "qt-mega-agent-txtb"
         self.session_id = rospy.get_param('~session_id', uuid.uuid4())
-        self.default_language = rospy.get_param('~default_language', 'en-US')
+        self.default_language = rospy.get_param('~default_language', 'sv-SE')
         self.disable_audio = rospy.get_param('~disable_audio', False)
-
-        self.session_client = dialogflow.SessionsClient(credentials=self.credentials)
+        
+        self.session_client = dialogflow.SessionsClient()
         self.session = self.session_client.session_path(self.project_id, self.session_id)
         rospy.loginfo('Session path: {}\n'.format(self.session))
 
-        self.audio_chunk_queue = deque()
-        self.max_queue_size = 100
+        self.audio_chunk_queue = queue.Queue()
+        #self.max_queue_size = 100
 
         # Note: hard coding audio_encoding and sample_rate_hertz for simplicity.
-        audio_encoding = dialogflow.enums.AudioEncoding.AUDIO_ENCODING_LINEAR_16
+        audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16
         sample_rate_hertz = 16000
-        self.audio_config = dialogflow.types.InputAudioConfig(
-            audio_encoding=audio_encoding, language_code=self.default_language,
-            sample_rate_hertz=sample_rate_hertz)
+        self.audio_config = dialogflow.InputAudioConfig(
+            audio_encoding=audio_encoding,
+            language_code=self.default_language,
+            sample_rate_hertz=sample_rate_hertz,
+            single_utterance=True)
 
         self.query_result_pub = rospy.Publisher('response', DialogflowResponse, queue_size=10)
-        self.query_text_pub = rospy.Publisher('query_text', std_msgs.String, queue_size=10)
+        self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
+        self.record_pub = rospy.Publisher('is_recording', Bool, queue_size=1, latch=True)
+        
+        rospy.wait_for_service('qt_robot/speech/say')
+        self.say_srv = rospy.ServiceProxy('qt_robot/speech/say', speech_say)
 
-        rospy.Subscriber('/text', std_msgs.String, self.text_callback)
+        rospy.Subscriber('/text', String, self.text_callback)
 
         if not self.disable_audio:
-            rospy.Subscriber('/audio', AudioData, self.audio_callback)
-
+            rospy.Subscriber('/qt_robot/sound', AudioData, self.audio_callback)
+            self.record_pub.publish(True)
+            
         self.list_intents_sevice = rospy.Service(
                 'list_intents',
                 Empty,
@@ -79,21 +78,21 @@ class DialogflowNode:
 
         for intent in intents:
             rospy.loginfo('=' * 20)
-            rospy.loginfo('Intent name: {}'.format(intent.name.encode('utf-8')))
-            rospy.loginfo('Intent display_name: {}'.format(intent.display_name.encode('utf-8')))
-            rospy.loginfo('Action: {}\n'.format(intent.action.encode('utf-8')))
+            rospy.loginfo('Intent name: {}'.format(intent.name))
+            rospy.loginfo('Intent display_name: {}'.format(intent.display_name))
+            rospy.loginfo('Action: {}\n'.format(intent.action))
             rospy.loginfo('Root followup intent: {}'.format(
-                intent.root_followup_intent_name.encode('utf-8')))
+                intent.root_followup_intent_name))
             rospy.loginfo('Parent followup intent: {}\n'.format(
-                intent.parent_followup_intent_name.encode('utf-8')))
+                intent.parent_followup_intent_name))
 
             rospy.loginfo('Input contexts:')
             for input_context_name in intent.input_context_names:
-                rospy.loginfo('\tName: {}'.format(input_context_name.encode('utf-8')))
+                rospy.loginfo('\tName: {}'.format(input_context_name))
 
             rospy.loginfo('Output contexts:')
             for output_context in intent.output_contexts:
-                rospy.loginfo('\tName: {}'.format(output_context.name.encode('utf-8')))
+                rospy.loginfo('\tName: {}'.format(output_context.name))
         return EmptyResponse()
 
     def handle_list_context(self, request):
@@ -126,52 +125,58 @@ class DialogflowNode:
     def publish_response(self, query_result):
         query_result_msg = DialogflowResponse()
         query_result_msg.project_id = self.project_id
-        query_result_msg.transcript = query_result.query_text.encode('utf-8') # text_msg.data
+        query_result_msg.transcript = query_result.query_text # text_msg.data
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
         query_result_msg.intent = query_result.intent
 
         if not query_result.fulfillment_text:
             fulfillment_messages = query_result.fulfillment_messages
             if len(fulfillment_messages) > 0:
-                query_result_msg.fulfillment_text = fulfillment_messages[0].text.text[0].encode('utf-8')
+                query_result_msg.fulfillment_text = fulfillment_messages[0].text.text[0]
             else:
                 rospy.logwarn("No fulfillment_text can be parsed")
         else:
-            query_result_msg.fulfillment_text = query_result.fulfillment_text.encode('utf-8')
+            query_result_msg.fulfillment_text = query_result.fulfillment_text
 
         self.query_result_pub.publish(query_result_msg)
+        self.record_pub.publish(False)
+        self.say_srv(query_result_msg.fulfillment_text)
+        self.record_pub.publish(True)
+        
 
     def audio_callback(self, audio_chunk_msg):
-        if len(self.audio_chunk_queue) < self.max_queue_size:
-            self.audio_chunk_queue.append(audio_chunk_msg.data)
-        else:
-            rospy.logwarn("Audio chunk queue if full, clearing!")
-            self.audio_chunk_queue = deque()
+        #if len(self.audio_chunk_queue) < self.max_queue_size:
+        
+        self.audio_chunk_queue.put(audio_chunk_msg.data)
+        #else:
+        #    rospy.logwarn("Audio chunk queue if full, clearing!")
+        #    self.audio_chunk_queue = Queue.Queue()
 
     def detect_intent_text(self, text):
 
-        text_input = dialogflow.types.TextInput(text=text, language_code=self.default_language)
-        query_input = dialogflow.types.QueryInput(text=text_input)
+        text_input = dialogflow.TextInput(text=text, language_code=self.default_language)
+        query_input = dialogflow.QueryInput(text=text_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
 
         rospy.loginfo('-' * 10 + " %s " + '-' * 10, self.project_id)
-        rospy.loginfo('Query text: {}'.format(response.query_result.query_text.encode('utf-8')))
+        rospy.loginfo('Query text: {}'.format(response.query_result.query_text))
         rospy.loginfo('Detected intent: {} (confidence: {})\n'.format(
-            response.query_result.intent.display_name.encode('utf-8'),
+            response.query_result.intent.display_name,
             response.query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
-            response.query_result.fulfillment_text.encode('utf-8')))
+            response.query_result.fulfillment_text))
         return response.query_result
 
     def detect_intent_stream(self):
         requests = self.audio_stream_request_generator()
-        responses = self.session_client.streaming_detect_intent(requests)
-
+        
+        responses = self.session_client.streaming_detect_intent(requests=requests)
+        
         rospy.loginfo('=' * 10 + " %s " + '=' * 10, self.project_id)
         try:
             for response in responses:
                 rospy.loginfo('Intermediate transcript: "{}".'.format(
-                        response.recognition_result.transcript.encode('utf-8')))
+                    response.recognition_result.transcript))
         except:
             rospy.logerr("Dialogflow exception. Out of audio quota? No internet connection (project_id: %s)", self.project_id)
             return
@@ -183,44 +188,38 @@ class DialogflowNode:
         if query_result.query_text == "":
             return
 
-        self.query_text_pub.publish(std_msgs.String(data=query_result.query_text.encode('utf-8')))
+        self.query_text_pub.publish(String(data=query_result.query_text))
 
         rospy.loginfo('-' * 10 + " %s " + '-' * 10, self.project_id)
-        rospy.loginfo('Query text: {}'.format(query_result.query_text.encode('utf-8')))
+        rospy.loginfo('Query text: {}'.format(query_result.query_text))
         rospy.loginfo('Detected intent: {} (confidence: {})\n'.format(
-            query_result.intent.display_name.encode('utf-8'),
+            query_result.intent.display_name,
             query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
-            query_result.fulfillment_text.encode('utf-8')))
+            query_result.fulfillment_text))
 
         self.publish_response(query_result)
 
     def audio_stream_request_generator(self):
-        query_input = dialogflow.types.QueryInput(audio_config=self.audio_config)
-
+        query_input = dialogflow.QueryInput(audio_config=self.audio_config)
+        
         # The first request contains the configuration.
-        yield dialogflow.types.StreamingDetectIntentRequest(
+        yield dialogflow.StreamingDetectIntentRequest(
             session=self.session,
-            query_input=query_input,
-            single_utterance=True)
-
+            query_input=query_input)
+        
         # Here we are reading small chunks of audio from a dequeue
         while True:
-            # Wait for more chunks to allow continious streaming
-            if len(self.audio_chunk_queue) == 0:
-                rospy.sleep(0.3) # This needs to be long enough depending on chunk size (pepper needs atleast 0.2)
-                if len(self.audio_chunk_queue) == 0:
-                    break
-
-            chunk = self.audio_chunk_queue.popleft()
-
+            chunk = self.audio_chunk_queue.get()
+            if not chunk:
+                rospy.logwarn("##### Break loop")
+                break
             # The later requests contains audio data.
-            yield dialogflow.types.StreamingDetectIntentRequest(input_audio=chunk)
+            yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
 
     def update(self):
-        if len(self.audio_chunk_queue) > 0:
-            self.detect_intent_stream()
-            # TODO: Publish query_reslut
+        #if len(self.audio_chunk_queue) > 0:
+        self.detect_intent_stream()
 
 
 if __name__ == '__main__':

@@ -237,7 +237,7 @@ class DialogflowNode:
             query_input=query_input)
         
         # Here we are reading small chunks of audio from a dequeue
-        while True:
+        while not rospy.is_shutdown():
             chunk = self.audio_chunk_queue.get()
             if not chunk:
                 rospy.logwarn("##### Break loop")

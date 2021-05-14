@@ -7,7 +7,10 @@ add_message_files(
   DIRECTORY
     msg
   FILES
-    DialogflowResponse.msg
+    Response.msg
+    Event.msg
+    Context.msg
+    Parameter.msg
     Intent.msg
 )
 

@@ -180,7 +180,6 @@ class DialogflowNode:
             msg.append(p_msg)
         return msg
 
-            
     def audio_callback(self, audio_chunk_msg):
         """ Callback for audio data """
         self.audio_chunk_queue.put(audio_chunk_msg.data)

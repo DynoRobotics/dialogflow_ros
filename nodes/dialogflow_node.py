@@ -153,15 +153,7 @@ class DialogflowNode:
         else:
             query_result_msg.fulfillment_text = query_result.fulfillment_text
 
-        for key in query_result.parameters:
-            p_msg = Parameter()
-            p_msg.key = key
-            value = query_result.parameters.get(key)
-            if isinstance(value, str):
-                p_msg.value = [value]
-            else:
-                p_msg.value = value
-            query_result_msg.parameters.append(p_msg)
+        query_result_msg.parameters.extend(self.create_parameters(query_result.parameters))
 
         for ctx in query_result.output_contexts:
             name = ctx.name.split("/")[-1]
@@ -169,20 +161,26 @@ class DialogflowNode:
                 c_msg = Context()
                 c_msg.name = name
                 if ctx.parameters:
-                    for key in ctx.parameters:
-                        p_msg = Parameter()
-                        p_msg.key = key
-                        value = ctx.parameters.get(key)
-                        if isinstance(value, str):
-                            p_msg.value = [value]
-                        else:
-                            p_msg.value = value
-                        c_msg.parameters.append(p_msg)
+                    c_msg.parameters.extend(self.create_parameters(ctx.parameters))
                 query_result_msg.output_contexts.append(c_msg)
 
         self.query_result_pub.publish(query_result_msg)
         self.fulfillment_pub.publish(query_result_msg.fulfillment_text)
 
+    def create_parameters(self, params):
+        msg = []
+        for key in params:
+            p_msg = Parameter()
+            p_msg.key = key
+            value = params.get(key)
+            if isinstance(value, str):
+                p_msg.value = [value]
+            else:
+                p_msg.value = value
+            msg.append(p_msg)
+        return msg
+
+            
     def audio_callback(self, audio_chunk_msg):
         """ Callback for audio data """
         self.audio_chunk_queue.put(audio_chunk_msg.data)
@@ -237,6 +235,7 @@ class DialogflowNode:
 
         # Note: The result from the last response is the final transcript along
         # with the detected content.
+        # pylint: disable=undefined-loop-variable
         query_result = response.query_result
 
         if query_result.query_text == "":

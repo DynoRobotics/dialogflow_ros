@@ -23,6 +23,7 @@ add_message_files(
 
 set(ROSLINT_PYTHON_OPTS
   "--max-line-length=127"
+  "1>&2"
 )
 roslint_python()
 

@@ -18,7 +18,7 @@ jobs:
       - name: Install Non-ROS Dependencies
         run: |
           ls -l $GITHUB_WORKSPACE
-	  python --version
+          python --version
           python -m pip install --upgrade pip
           pip install flake8 pylint
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi

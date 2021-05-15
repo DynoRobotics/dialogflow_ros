@@ -52,7 +52,7 @@ class DialogflowNode:
         rospy.Subscriber('event', Event, self.event_callback)
 
         if not self.disable_audio:
-            rospy.Subscriber('/qt_robot/sound', AudioData, self.audio_callback)
+            rospy.Subscriber('sound', AudioData, self.audio_callback)
 
         self.list_intents_sevice = rospy.Service(
                 'list_intents',

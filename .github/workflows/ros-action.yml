@@ -65,8 +65,10 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Analysing the code with pylint
         run: |
+	  cd ~/catkin_ws
+	  source devel/setup.bash
           cd ~/catkin_ws/src/dialogflow_ros/nodes
-          pylint --fail-under=10 `find -regextype egrep -regex '(.*.py)$'` | tee pylint.txt
+          pylint --fail-under=10 `find -regextype egrep -regex '(.*.py)$'` | tee $GITHUB_WORKSPACE/pylint.txt
       - name: Upload pylint.txt as artifact
         uses: actions/upload-artifact@v2
         with:

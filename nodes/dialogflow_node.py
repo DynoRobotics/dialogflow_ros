@@ -258,7 +258,8 @@ class DialogflowNode:
             yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
 
     def update(self):
-        self.detect_intent_stream()
+        if not self.disable_audio:
+            self.detect_intent_stream()
 
 
 if __name__ == '__main__':

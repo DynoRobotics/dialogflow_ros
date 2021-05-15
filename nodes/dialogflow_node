@@ -10,6 +10,7 @@ import uuid
 import time
 import queue#from collections import deque
 from google.cloud import dialogflow
+from google.protobuf import struct_pb2
 
 from std_msgs.msg import String, Bool
 from qt_robot_interface.srv import speech_say
@@ -51,6 +52,7 @@ class DialogflowNode:
         self.say_srv = rospy.ServiceProxy('qt_robot/speech/say', speech_say)
 
         rospy.Subscriber('/text', String, self.text_callback)
+        rospy.Subscriber('event', Event, self.event_callback)
 
         if not self.disable_audio:
             rospy.Subscriber('/qt_robot/sound', AudioData, self.audio_callback)
@@ -122,6 +124,11 @@ class DialogflowNode:
         query_result = self.detect_intent_text(text_msg.data)
         self.publish_response(query_result)
 
+    def event_callback(self, event_msg):
+        rospy.loginfo("Publishing event %s", event_msg.name)
+        query_result = self.detect_intent_event(event_msg)
+        self.publish_response(query_result)
+
     def publish_response(self, query_result):
         query_result_msg = Response()
         query_result_msg.project_id = self.project_id
@@ -185,6 +192,24 @@ class DialogflowNode:
 
         text_input = dialogflow.TextInput(text=text, language_code=self.default_language)
         query_input = dialogflow.QueryInput(text=text_input)
+        response = self.session_client.detect_intent(session=self.session, query_input=query_input)
+
+        rospy.loginfo('-' * 10 + " %s " + '-' * 10, self.project_id)
+        rospy.loginfo('Query text: {}'.format(response.query_result.query_text))
+        rospy.loginfo('Detected intent: {} (confidence: {})\n'.format(
+            response.query_result.intent.display_name,
+            response.query_result.intent_detection_confidence))
+        rospy.loginfo('Fulfillment text: {}\n'.format(
+            response.query_result.fulfillment_text))
+        return response.query_result
+
+    def detect_intent_event(self, event_msg):
+        event_input = dialogflow.EventInput(language_code=self.default_language, name=event_msg.name)
+        params = struct_pb2.Struct()
+        for param in event_msg.parameters:
+            params[param.key] = param.value
+        event_input.parameters = params
+        query_input = dialogflow.QueryInput(event=event_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
 
         rospy.loginfo('-' * 10 + " %s " + '-' * 10, self.project_id)

@@ -11,6 +11,7 @@ import time
 import queue
 from google.cloud import dialogflow
 from google.protobuf import struct_pb2
+from google.api_core import exceptions
 
 from std_msgs.msg import String, Bool
 from qt_robot_interface.srv import speech_say
@@ -18,6 +19,7 @@ from audio_common_msgs.msg import AudioData
 from dialogflow_ros.msg import Response, Intent, Event, Context, Parameter
 
 from std_srvs.srv import Empty, EmptyResponse
+
 
 class DialogflowNode:
     def __init__(self):
@@ -33,7 +35,6 @@ class DialogflowNode:
         rospy.loginfo('Session path: {}\n'.format(self.session))
 
         self.audio_chunk_queue = queue.Queue()
-        #self.max_queue_size = 100
 
         # Note: hard coding audio_encoding and sample_rate_hertz for simplicity.
         audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16
@@ -118,7 +119,6 @@ class DialogflowNode:
             contexts_client.delete_context(context.name)
         return EmptyResponse()
 
-
     def text_callback(self, text_msg):
         self.query_text_pub.publish(text_msg)
         query_result = self.detect_intent_text(text_msg.data)
@@ -132,7 +132,7 @@ class DialogflowNode:
     def publish_response(self, query_result):
         query_result_msg = Response()
         query_result_msg.project_id = self.project_id
-        query_result_msg.query_text = query_result.query_text # text_msg.data
+        query_result_msg.query_text = query_result.query_text
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
         query_result_msg.intent.display_name = query_result.intent.display_name
         query_result_msg.intent.name = query_result.intent.name
@@ -179,14 +179,8 @@ class DialogflowNode:
         self.say_srv(query_result_msg.fulfillment_text)
         self.record_pub.publish(True)
 
-
     def audio_callback(self, audio_chunk_msg):
-        #if len(self.audio_chunk_queue) < self.max_queue_size:
-
         self.audio_chunk_queue.put(audio_chunk_msg.data)
-        #else:
-        #    rospy.logwarn("Audio chunk queue if full, clearing!")
-        #    self.audio_chunk_queue = Queue.Queue()
 
     def detect_intent_text(self, text):
 
@@ -229,8 +223,8 @@ class DialogflowNode:
             for response in responses:
                 rospy.loginfo('Intermediate transcript: "{}".'.format(
                     response.recognition_result.transcript))
-        except:
-            rospy.logerr("Dialogflow exception. Out of audio quota? "\
+        except exceptions.OutOfRange as e:
+            rospy.logerr("Dialogflow exception. Out of audio quota? "
                          "No internet connection (project_id: %s)", self.project_id)
             return
 
@@ -271,7 +265,6 @@ class DialogflowNode:
             yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
 
     def update(self):
-        #if len(self.audio_chunk_queue) > 0:
         self.detect_intent_stream()
 
 

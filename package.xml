@@ -13,6 +13,8 @@
   
   <depend>message_generation</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>rospy</depend>
   <depend>audio_common_msgs</depend>
 
   <exec_depend>roslint</exec_depend>

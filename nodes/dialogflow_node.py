@@ -10,9 +10,9 @@ License: BSD
   https://raw.githubusercontent.com/samiamlabs/dyno/master/LICENCE
 """
 
-import rospy
 import uuid
 import queue
+import rospy
 from google.cloud import dialogflow
 from google.protobuf import struct_pb2
 from google.api_core import exceptions
@@ -25,6 +25,7 @@ from std_srvs.srv import Empty, EmptyResponse
 
 
 class DialogflowNode:
+    """ The dialogflow node """
     def __init__(self):
         rospy.init_node('dialogflow_node')
 
@@ -73,8 +74,9 @@ class DialogflowNode:
                 Empty,
                 self.handle_clear_context)
 
-    def handle_list_intents(self, request):
-        intents_client = dialogflow.IntentsClient(credentials=self.credentials)
+    def handle_list_intents(self, _):
+        """ Prints all intents """
+        intents_client = dialogflow.IntentsClient()
         parent = intents_client.project_agent_path(self.project_id)
         intents = intents_client.list_intents(parent)
 
@@ -97,8 +99,9 @@ class DialogflowNode:
                 rospy.loginfo('\tName: {}'.format(output_context.name))
         return EmptyResponse()
 
-    def handle_list_context(self, request):
-        contexts_client = dialogflow.ContextsClient(credentials=self.credentials)
+    def handle_list_context(self, _):
+        """ Prints the current contexts """
+        contexts_client = dialogflow.ContextsClient()
         contexts = contexts_client.list_contexts(self.session)
 
         rospy.loginfo('Contexts for session {}:\n'.format(self.session))
@@ -111,24 +114,28 @@ class DialogflowNode:
                     rospy.loginfo('\t{}: {}'.format(field, value))
         return EmptyResponse()
 
-    def handle_clear_context(self, request):
-        contexts_client = dialogflow.ContextsClient(credentials=self.credentials)
+    def handle_clear_context(self, _):
+        """ Clear all current contexts """
+        contexts_client = dialogflow.ContextsClient()
         contexts = contexts_client.list_contexts(self.session)
         for context in contexts:
             contexts_client.delete_context(context.name)
         return EmptyResponse()
 
     def text_callback(self, text_msg):
+        """ Callback for text input """
         self.query_text_pub.publish(text_msg)
         query_result = self.detect_intent_text(text_msg.data)
         self.publish_response(query_result)
 
     def event_callback(self, event_msg):
+        """ Callback for event input """
         rospy.loginfo("Publishing event %s", event_msg.name)
         query_result = self.detect_intent_event(event_msg)
         self.publish_response(query_result)
 
     def publish_response(self, query_result):
+        """ Converts the dialogflow query result to the corresponding ros message """
         query_result_msg = Response()
         query_result_msg.project_id = self.project_id
         query_result_msg.query_text = query_result.query_text
@@ -177,10 +184,11 @@ class DialogflowNode:
         self.fulfillment_pub.publish(query_result_msg.fulfillment_text)
 
     def audio_callback(self, audio_chunk_msg):
+        """ Callback for audio data """
         self.audio_chunk_queue.put(audio_chunk_msg.data)
 
     def detect_intent_text(self, text):
-
+        """ Send text to dialogflow and publish response """
         text_input = dialogflow.TextInput(text=text, language_code=self.language)
         query_input = dialogflow.QueryInput(text=text_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
@@ -195,6 +203,7 @@ class DialogflowNode:
         return response.query_result
 
     def detect_intent_event(self, event_msg):
+        """ Send event to dialogflow and publish response """
         event_input = dialogflow.EventInput(language_code=self.language, name=event_msg.name)
         params = struct_pb2.Struct()
         for param in event_msg.parameters:
@@ -213,6 +222,7 @@ class DialogflowNode:
         return response.query_result
 
     def detect_intent_stream(self):
+        """ Send streaming audio to dialogflow and publish response """
         requests = self.audio_stream_request_generator()
         responses = self.session_client.streaming_detect_intent(requests=requests)
         rospy.loginfo('=' * 10 + " %s " + '=' * 10, self.project_id)
@@ -220,9 +230,9 @@ class DialogflowNode:
             for response in responses:
                 rospy.loginfo('Intermediate transcript: "{}".'.format(
                     response.recognition_result.transcript))
-        except exceptions.OutOfRange as e:
+        except exceptions.OutOfRange as exc:
             rospy.logerr("Dialogflow exception. Out of audio quota? "
-                         "No internet connection (%s)", e)
+                         "No internet connection (%s)", exc)
             return
 
         # Note: The result from the last response is the final transcript along
@@ -245,6 +255,7 @@ class DialogflowNode:
         self.publish_response(query_result)
 
     def audio_stream_request_generator(self):
+        """ Reads the sound from the ros-topic in an generator """
         query_input = dialogflow.QueryInput(audio_config=self.audio_config)
 
         # The first request contains the configuration.
@@ -262,6 +273,7 @@ class DialogflowNode:
             yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
 
     def update(self):
+        """ Update straming intents if we are using audio data """
         if not self.disable_audio:
             self.detect_intent_stream()
 

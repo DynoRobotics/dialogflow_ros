@@ -3,7 +3,11 @@ project(dialogflow_ros)
 
 find_package(catkin REQUIRED COMPONENTS
   message_generation
+  audio_common_msgs
+  rospy
   roslint
+  std_msgs
+  std_srvs
 )
 
 add_message_files(

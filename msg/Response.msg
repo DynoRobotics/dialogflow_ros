@@ -1,6 +1,7 @@
 string project_id
 string query_text
 string fulfillment_text
+string action
 float64 intent_detection_confidence
 
 dialogflow_ros/Intent intent

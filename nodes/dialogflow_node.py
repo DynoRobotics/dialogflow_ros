@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#
-# License: BSD
-#   https://raw.githubusercontent.com/samiamlabs/dyno/master/LICENCE
-#
+"""
+A dialogflow integration for ROS
+
+The node has support for events, intents, contexts, parameters and even dialogflow actions
+
+
+License: BSD
+  https://raw.githubusercontent.com/samiamlabs/dyno/master/LICENCE
+"""
 
 import rospy
 import uuid
-import time
 import queue
 from google.cloud import dialogflow
 from google.protobuf import struct_pb2
@@ -15,7 +19,7 @@ from google.api_core import exceptions
 
 from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
-from dialogflow_ros.msg import Response, Intent, Event, Context, Parameter
+from dialogflow_ros.msg import Response, Event, Context, Parameter
 
 from std_srvs.srv import Empty, EmptyResponse
 
@@ -218,7 +222,7 @@ class DialogflowNode:
                     response.recognition_result.transcript))
         except exceptions.OutOfRange as e:
             rospy.logerr("Dialogflow exception. Out of audio quota? "
-                         "No internet connection (project_id: %s)", self.project_id)
+                         "No internet connection (%s)", e)
             return
 
         # Note: The result from the last response is the final transcript along

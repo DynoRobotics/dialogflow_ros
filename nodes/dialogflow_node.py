@@ -13,8 +13,7 @@ from google.cloud import dialogflow
 from google.protobuf import struct_pb2
 from google.api_core import exceptions
 
-from std_msgs.msg import String, Bool
-from qt_robot_interface.srv import speech_say
+from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData
 from dialogflow_ros.msg import Response, Intent, Event, Context, Parameter
 
@@ -47,17 +46,13 @@ class DialogflowNode:
 
         self.query_result_pub = rospy.Publisher('response', Response, queue_size=10)
         self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
-        self.record_pub = rospy.Publisher('is_recording', Bool, queue_size=1, latch=True)
+        self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
 
-        rospy.wait_for_service('qt_robot/speech/say')
-        self.say_srv = rospy.ServiceProxy('qt_robot/speech/say', speech_say)
-
-        rospy.Subscriber('/text', String, self.text_callback)
+        rospy.Subscriber('text', String, self.text_callback)
         rospy.Subscriber('event', Event, self.event_callback)
 
         if not self.disable_audio:
             rospy.Subscriber('/qt_robot/sound', AudioData, self.audio_callback)
-            self.record_pub.publish(True)
 
         self.list_intents_sevice = rospy.Service(
                 'list_intents',
@@ -175,9 +170,7 @@ class DialogflowNode:
                 query_result_msg.output_contexts.append(c_msg)
 
         self.query_result_pub.publish(query_result_msg)
-        self.record_pub.publish(False)
-        self.say_srv(query_result_msg.fulfillment_text)
-        self.record_pub.publish(True)
+        self.fulfillment_pub.publish(query_result_msg.fulfillment_text)
 
     def audio_callback(self, audio_chunk_msg):
         self.audio_chunk_queue.put(audio_chunk_msg.data)

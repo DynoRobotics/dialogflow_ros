@@ -15,7 +15,7 @@
   <depend>std_msgs</depend>
   <depend>audio_common_msgs</depend>
 
-  <run_depend>roslint</run_depend>
+  <exec_depend>roslint</exec_depend>
   
   <export>
   </export>

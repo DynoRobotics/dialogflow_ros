@@ -168,6 +168,7 @@ class DialogflowNode:
         self.fulfillment_pub.publish(query_result_msg.fulfillment_text)
 
     def create_parameters(self, params):
+        """ Helper function for converting dialogflow messages to ROS counterparts """
         msg = []
         for key in params:
             p_msg = Parameter()

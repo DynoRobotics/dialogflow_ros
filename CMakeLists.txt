@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dialogflow_ros)
 
-find_package(catkin REQUIRED message_generation)
+find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  roslint
+)
 
 add_message_files(
   DIRECTORY
@@ -13,6 +16,11 @@ add_message_files(
     Parameter.msg
     Intent.msg
 )
+
+set(ROSLINT_PYTHON_OPTS
+  "--max-line-length=127"
+)
+roslint_python()
 
 generate_messages()
 

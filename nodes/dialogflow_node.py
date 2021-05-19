@@ -157,7 +157,7 @@ class DialogflowNode:
 
         for ctx in query_result.output_contexts:
             name = ctx.name.split("/")[-1]
-            if not name.startswith("__"):
+            if not name.endswith("__"):
                 c_msg = Context()
                 c_msg.name = name
                 if ctx.parameters:

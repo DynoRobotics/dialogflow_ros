@@ -176,6 +176,8 @@ class DialogflowNode:
             value = params.get(key)
             if isinstance(value, str):
                 p_msg.value = [value]
+            elif isinstance(value, float):
+                p_msg.value = [str(value)]
             else:
                 p_msg.value = value
             msg.append(p_msg)

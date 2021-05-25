@@ -61,7 +61,7 @@ class DialogflowNode:
 
         self.volume = 0
         self.is_talking = False
-        
+
         rospy.Subscriber('text', String, self.text_callback)
         rospy.Subscriber('is_talking', Bool, self.is_talking_callback)
         rospy.Subscriber('event', Event, self.event_callback)
@@ -137,8 +137,6 @@ class DialogflowNode:
         """ Callback for text input """
         self.is_talking = msg.data
 
-        
-
     def text_callback(self, text_msg):
         """ Callback for text input """
         self.query_text_pub.publish(text_msg)
@@ -202,7 +200,6 @@ class DialogflowNode:
 
     def audio_callback(self, audio_chunk_msg):
         """ Callback for audio data """
-        #rospy.loginfo("--Got audio")
         self.audio_chunk_queue.append(audio_chunk_msg.data)
 
     def volume_callback(self, msg):
@@ -247,7 +244,7 @@ class DialogflowNode:
         """ Send streaming audio to dialogflow and publish response """
         if self.disable_audio:
             return
-        
+
         requests = self.audio_stream_request_generator()
         self.listening_pub.publish(True)
         rospy.loginfo("STARTA LYSSNA!")
@@ -286,17 +283,15 @@ class DialogflowNode:
     def audio_stream_request_generator(self):
         """ Reads the sound from the ros-topic in an generator """
         query_input = dialogflow.QueryInput(audio_config=self.audio_config)
-        #rospy.loginfo("Yield header to dialogflow")
         # The first request contains the configuration.
         yield dialogflow.StreamingDetectIntentRequest(
             session=self.session,
             query_input=query_input)
-        
+
+        # Save data to audio file
         if self.save_audio_requests:
-            # Open up a wav file
             filename = str(int(time.time()))+".wav"
             wf=wave.open(filename,"w")
-            # wav params
             wf.setnchannels(1)
             wf.setsampwidth(2)
             wf.setframerate(16000)
@@ -305,20 +300,17 @@ class DialogflowNode:
             try:
                 chunk = self.audio_chunk_queue.popleft()
             except IndexError as e:
-                #rospy.loginfo("Tried to pop with empty deque")
                 # Wait for new sound data, should come within 0.1s since it is sent in 10Hz
                 rospy.sleep(0.1)
                 continue
             if self.save_audio_requests:
                 wf.writeframes(chunk)
 
-            #rospy.loginfo("##Yield audio data to dialogflow")
-            
             # The later requests contains audio data.
             yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
         if self.save_audio_requests:
             wf.close()
-        
+
     def run(self):
         """ Update straming intents if we are using audio data """
         while not rospy.is_shutdown():
@@ -327,7 +319,7 @@ class DialogflowNode:
                     self.detect_intent_stream()
                 else:
                     rospy.logwarn("Is not talking, volume is too low: %d", self.volume)
-            rospy.sleep(0.1) # Maybe remove this later on....
+            rospy.sleep(0.1)
 
 
 if __name__ == '__main__':

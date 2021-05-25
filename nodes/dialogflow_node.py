@@ -55,6 +55,7 @@ class DialogflowNode:
 
         self.query_result_pub = rospy.Publisher('response', Response, queue_size=10)
         self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
+        self.transcript_pub = rospy.Publisher('transcript', String, queue_size=2)
         self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
         self.listening_pub = rospy.Publisher('is_listening', Bool, queue_size=2)
 
@@ -257,6 +258,7 @@ class DialogflowNode:
             for response in responses:
                 rospy.loginfo('Intermediate transcript: "{}".'.format(
                     response.recognition_result.transcript))
+                self.transcript_pub.publish(response.recognition_result.transcript)
         except exceptions.OutOfRange as exc:
             rospy.logerr("Dialogflow exception. Out of audio quota? "
                          "No internet connection (%s)", exc)
@@ -264,8 +266,6 @@ class DialogflowNode:
         self.listening_pub.publish(False)
         print("SLUTA LYSSNA")
 
-        # Note: The result from the last response is the final transcript along
-        # with the detected content.
         # pylint: disable=undefined-loop-variable
         query_result = response.query_result
 

@@ -220,6 +220,7 @@ class DialogflowNode:
             response.query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
             response.query_result.fulfillment_text))
+        self.stop_streaming = False
         return response.query_result
 
     def detect_intent_event(self, event_msg):
@@ -240,13 +241,14 @@ class DialogflowNode:
             response.query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
             response.query_result.fulfillment_text))
+        self.stop_streaming = False
         return response.query_result
 
     def detect_intent_stream(self):
         """ Send streaming audio to dialogflow and publish response """
         if self.disable_audio:
             return
-        self.stop_streaming = False
+
         requests = self.audio_stream_request_generator()
         self.listening_pub.publish(True)
         rospy.loginfo("STARTA LYSSNA!")

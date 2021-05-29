@@ -317,8 +317,6 @@ class DialogflowNode:
             if not self.is_talking:
                 if self.volume > self.threshold:
                     self.detect_intent_stream()
-                else:
-                    rospy.logwarn("Is not talking, volume is too low: %d", self.volume)
             rospy.sleep(0.1)
 
 

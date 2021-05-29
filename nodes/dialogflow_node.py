@@ -61,7 +61,7 @@ class DialogflowNode:
 
         self.volume = 0
         self.is_talking = False
-
+        self.stop_streaming = False
         rospy.Subscriber('text', String, self.text_callback)
         rospy.Subscriber('is_talking', Bool, self.is_talking_callback)
         rospy.Subscriber('event', Event, self.event_callback)
@@ -208,6 +208,7 @@ class DialogflowNode:
 
     def detect_intent_text(self, text):
         """ Send text to dialogflow and publish response """
+        self.stop_streaming = True
         text_input = dialogflow.TextInput(text=text, language_code=self.language)
         query_input = dialogflow.QueryInput(text=text_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
@@ -223,6 +224,7 @@ class DialogflowNode:
 
     def detect_intent_event(self, event_msg):
         """ Send event to dialogflow and publish response """
+        self.stop_streaming = True
         event_input = dialogflow.EventInput(language_code=self.language, name=event_msg.name)
         params = struct_pb2.Struct()
         for param in event_msg.parameters:
@@ -244,7 +246,7 @@ class DialogflowNode:
         """ Send streaming audio to dialogflow and publish response """
         if self.disable_audio:
             return
-
+        self.stop_streaming = False
         requests = self.audio_stream_request_generator()
         self.listening_pub.publish(True)
         rospy.loginfo("STARTA LYSSNA!")
@@ -296,7 +298,7 @@ class DialogflowNode:
             wf.setsampwidth(2)
             wf.setframerate(16000)
         # Here we are reading small chunks of audio from a queue
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() and not self.stop_streaming:
             try:
                 chunk = self.audio_chunk_queue.popleft()
             except IndexError as e:
@@ -308,6 +310,7 @@ class DialogflowNode:
 
             # The later requests contains audio data.
             yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
+        rospy.loginfo("AVBRÖT STREAMING INTENT!!")
         if self.save_audio_requests:
             wf.close()
 

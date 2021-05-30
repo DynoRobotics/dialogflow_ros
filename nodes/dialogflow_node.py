@@ -34,8 +34,8 @@ class DialogflowNode:
         self.session_id = rospy.get_param('~session_id', uuid.uuid4())
         self.language = rospy.get_param('~default_language', 'sv-SE')
         self.disable_audio = rospy.get_param('~disable_audio', False)
-        self.threshold = rospy.get_param('~threshold', 250)
-        self.time_before_start = rospy.get_param('~time_before_start', 0.50)
+        self.threshold = rospy.get_param('~threshold', 2000)
+        self.time_before_start = rospy.get_param('~time_before_start', 0.5)
         self.save_audio_requests = rospy.get_param('~save_audio_requests', True)
 
         self.session_client = dialogflow.SessionsClient()

@@ -297,7 +297,7 @@ class DialogflowNode:
 
         # Save data to audio file
         if self.save_audio_requests:
-            filename = str(int(time.time()))+".wav"
+            filename = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())+".wav"
             wf=wave.open(filename,"w")
             wf.setnchannels(1)
             wf.setsampwidth(2)

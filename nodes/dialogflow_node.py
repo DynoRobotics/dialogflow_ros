@@ -136,6 +136,9 @@ class DialogflowNode:
     def is_talking_callback(self, msg):
         """ Callback for text input """
         self.is_talking = msg.data
+        if not self.is_talking:
+            self.listening_pub.publish(True)
+            rospy.loginfo("STARTA LYSSNA")
 
     def text_callback(self, text_msg):
         """ Callback for text input """
@@ -250,8 +253,8 @@ class DialogflowNode:
             return
 
         requests = self.audio_stream_request_generator()
-        self.listening_pub.publish(True)
-        rospy.loginfo("STARTA LYSSNA!")
+
+        rospy.loginfo("LJUD PASSERAT THRESHOLD!")
         responses = self.session_client.streaming_detect_intent(requests=requests)
         rospy.loginfo('=' * 10 + " %s " + '=' * 10, self.project_id)
         try:

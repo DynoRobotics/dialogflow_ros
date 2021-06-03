@@ -22,7 +22,7 @@ from google.api_core import exceptions
 from std_msgs.msg import String, Bool, UInt16
 from audio_common_msgs.msg import AudioData
 from dialogflow_ros.msg import Response, Event, Context, Parameter
-
+from qt_robot_interface.srv import audio_play
 from std_srvs.srv import Empty, EmptyResponse
 
 class DialogflowNode:
@@ -57,14 +57,19 @@ class DialogflowNode:
         self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
         self.transcript_pub = rospy.Publisher('transcript', String, queue_size=2)
         self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
-        self.listening_pub = rospy.Publisher('is_listening', Bool, queue_size=2)
 
         self.volume = 0
         self.is_talking = False
+        self.head_visible = False
         self.stop_streaming = False
+        self.skip_audio = False
+        rospy.wait_for_service('/qt_robot/audio/play')
+        self.audio_play_srv = rospy.ServiceProxy('/qt_robot/audio/play', audio_play)
+
         rospy.Subscriber('text', String, self.text_callback)
         rospy.Subscriber('is_talking', Bool, self.is_talking_callback)
         rospy.Subscriber('event', Event, self.event_callback)
+        rospy.Subscriber('head_visible', Bool, self.head_visible_callback)
 
         if not self.disable_audio:
             rospy.Subscriber('sound', AudioData, self.audio_callback)
@@ -136,9 +141,10 @@ class DialogflowNode:
     def is_talking_callback(self, msg):
         """ Callback for text input """
         self.is_talking = msg.data
-        if not self.is_talking:
-            self.listening_pub.publish(True)
-            rospy.loginfo("STARTA LYSSNA")
+
+    def head_visible_callback(self, msg):
+        """ Callback for text input """
+        self.head_visible = msg.data
 
     def text_callback(self, text_msg):
         """ Callback for text input """
@@ -203,6 +209,8 @@ class DialogflowNode:
 
     def audio_callback(self, audio_chunk_msg):
         """ Callback for audio data """
+        if self.skip_audio:
+            return
         self.audio_chunk_queue.append(audio_chunk_msg.data)
 
     def volume_callback(self, msg):
@@ -319,13 +327,38 @@ class DialogflowNode:
         if self.save_audio_requests:
             wf.close()
 
+    def playStartSound(self):
+        self.skip_audio = True
+        self.audio_play_srv("confirm_listen.wav","")
+        self.skip_audio = False
+
+    def playStopSound(self):
+        self.skip_audio = True
+        self.audio_play_srv("confirm_notlisten.wav","")
+        self.skip_audio = False
+
     def run(self):
         """ Update straming intents if we are using audio data """
         while not rospy.is_shutdown():
-            if not self.is_talking:
-                if self.volume > self.threshold:
-                    self.detect_intent_stream()
-            rospy.sleep(0.1)
+            rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
+            while self.is_talking and not rospy.is_shutdown():
+                rospy.sleep(0.1)
+            rospy.logwarn("VÄNTAR PÅ ANSIKTE!")
+            while not self.head_visible and not rospy.is_shutdown():
+                rospy.sleep(0.1)
+            self.playStartSound()
+            rospy.logwarn("VÄNTAR PÅ HÖGRE LJUDNIVÅ!")
+            while self.volume < self.threshold and not rospy.is_shutdown():
+                rospy.sleep(0.1)
+            rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
+            self.detect_intent_stream()
+            self.playStopSound()
+            rospy.logwarn("VÄNTAR PÅ ATT ROBOT SKA BÖRJA PRATA!")
+            while not self.is_talking and not rospy.is_shutdown():
+                rospy.sleep(0.1)
+
+            rospy.sleep(0.5)
+            
 
 
 if __name__ == '__main__':

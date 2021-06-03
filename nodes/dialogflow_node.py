@@ -145,6 +145,10 @@ class DialogflowNode:
     def head_visible_callback(self, msg):
         """ Callback for text input """
         self.head_visible = msg.data
+        if not self.head_visible:
+            self.cancel_stream_intent = True
+        else:
+            self.cancel_stream_intent = False
 
     def text_callback(self, text_msg):
         """ Callback for text input """
@@ -275,11 +279,13 @@ class DialogflowNode:
                          "No internet connection (%s)", exc)
             return
 
+
+        if self.cancel_stream_intent:
+            return
+        
         # pylint: disable=undefined-loop-variable
         query_result = response.query_result
 
-        #if query_result.query_text == "":
-        #    return
 
         self.query_text_pub.publish(String(data=query_result.query_text))
 
@@ -346,11 +352,13 @@ class DialogflowNode:
                 rospy.sleep(0.1)
             self.playStartSound()
             rospy.logwarn("VÄNTAR PÅ HÖGRE LJUDNIVÅ!")
-            while self.volume < self.threshold and not rospy.is_shutdown():
+            while self.volume < self.threshold and not rospy.is_shutdown() and not self.cancel_stream_intent:
                 rospy.sleep(0.1)
             rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
             self.detect_intent_stream()
             self.playStopSound()
+            if self.cancel_stream_intent:
+                continue
             rospy.logwarn("VÄNTAR PÅ ATT ROBOT SKA BÖRJA PRATA!")
             while not self.is_talking and not rospy.is_shutdown():
                 rospy.sleep(0.1)

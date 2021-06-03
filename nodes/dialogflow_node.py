@@ -276,8 +276,6 @@ class DialogflowNode:
             rospy.logerr("Dialogflow exception. Out of audio quota? "
                          "No internet connection (%s)", exc)
             return
-        self.listening_pub.publish(False)
-        rospy.loginfo("SLUTA LYSSNA")
 
         # pylint: disable=undefined-loop-variable
         query_result = response.query_result

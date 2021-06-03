@@ -61,7 +61,7 @@ class DialogflowNode:
         self.volume = 0
         self.is_talking = False
         self.head_visible = False
-        self.stop_streaming = False
+        self.cancel_stream_intent = False
         self.skip_audio = False
         rospy.wait_for_service('/qt_robot/audio/play')
         self.audio_play_srv = rospy.ServiceProxy('/qt_robot/audio/play', audio_play)
@@ -221,7 +221,7 @@ class DialogflowNode:
 
     def detect_intent_text(self, text):
         """ Send text to dialogflow and publish response """
-        self.stop_streaming = True
+        self.cancel_stream_intent = True
         text_input = dialogflow.TextInput(text=text, language_code=self.language)
         query_input = dialogflow.QueryInput(text=text_input)
         response = self.session_client.detect_intent(session=self.session, query_input=query_input)
@@ -233,12 +233,12 @@ class DialogflowNode:
             response.query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
             response.query_result.fulfillment_text))
-        self.stop_streaming = False
+        self.cancel_stream_intent = False
         return response.query_result
 
     def detect_intent_event(self, event_msg):
         """ Send event to dialogflow and publish response """
-        self.stop_streaming = True
+        self.cancel_stream_intent = True
         event_input = dialogflow.EventInput(language_code=self.language, name=event_msg.name)
         params = struct_pb2.Struct()
         for param in event_msg.parameters:
@@ -254,7 +254,7 @@ class DialogflowNode:
             response.query_result.intent_detection_confidence))
         rospy.loginfo('Fulfillment text: {}\n'.format(
             response.query_result.fulfillment_text))
-        self.stop_streaming = False
+        self.cancel_stream_intent = False
         return response.query_result
 
     def detect_intent_stream(self):
@@ -309,7 +309,7 @@ class DialogflowNode:
             wf.setsampwidth(2)
             wf.setframerate(48000)
         # Here we are reading small chunks of audio from a queue
-        while not rospy.is_shutdown() and not self.stop_streaming:
+        while not rospy.is_shutdown() and not self.cancel_stream_intent:
             try:
                 chunk = self.audio_chunk_queue.popleft()
             except IndexError as e:

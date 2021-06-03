@@ -194,6 +194,8 @@ class DialogflowNode:
     def create_parameters(self, params):
         """ Helper function for converting dialogflow messages to ROS counterparts """
         msg = []
+        if not params:
+            return msg
         for key in params:
             p_msg = Parameter()
             p_msg.key = key
@@ -280,8 +282,8 @@ class DialogflowNode:
         # pylint: disable=undefined-loop-variable
         query_result = response.query_result
 
-        if query_result.query_text == "":
-            return
+        #if query_result.query_text == "":
+        #    return
 
         self.query_text_pub.publish(String(data=query_result.query_text))
 

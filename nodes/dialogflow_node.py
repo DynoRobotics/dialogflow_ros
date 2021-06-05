@@ -47,7 +47,7 @@ class DialogflowNode:
 
         # Note: hard coding audio_encoding and sample_rate_hertz for simplicity.
         audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16
-        sample_rate_hertz = 48000
+        sample_rate_hertz = 16000
         self.audio_config = dialogflow.InputAudioConfig(
             audio_encoding=audio_encoding,
             language_code=self.language,
@@ -324,7 +324,7 @@ class DialogflowNode:
             wf=wave.open(filename,"w")
             wf.setnchannels(1)
             wf.setsampwidth(2)
-            wf.setframerate(48000)
+            wf.setframerate(16000)
         # Here we are reading small chunks of audio from a queue
         while not rospy.is_shutdown() and not self.cancel_stream_intent:
             try:

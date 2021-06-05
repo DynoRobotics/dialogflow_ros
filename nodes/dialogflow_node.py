@@ -356,7 +356,7 @@ class DialogflowNode:
         """ Update straming intents if we are using audio data """
         while not rospy.is_shutdown():
             rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
-            while self.is_talking and not rospy.is_shutdown():
+            while self.is_talking and not rospy.is_shutdown() and not self.cancel_stream_intent:
                 rospy.sleep(0.1)
             rospy.logwarn("VÄNTAR PÅ HOT WORD!")
             while not self.detected_wake_word and not rospy.is_shutdown():

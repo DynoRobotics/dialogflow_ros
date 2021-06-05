@@ -20,6 +20,7 @@ from google.protobuf import struct_pb2
 from google.api_core import exceptions
 
 from std_msgs.msg import String, Bool, UInt16
+from std_msgs.msg import Empty as EmptyMsg
 from audio_common_msgs.msg import AudioData
 from dialogflow_ros.msg import Response, Event, Context, Parameter
 from qt_robot_interface.srv import audio_play
@@ -60,6 +61,7 @@ class DialogflowNode:
 
         self.volume = 0
         self.is_talking = False
+        self.detected_wake_word = False
         self.head_visible = False
         self.cancel_stream_intent = False
         self.skip_audio = False
@@ -70,6 +72,7 @@ class DialogflowNode:
         rospy.Subscriber('is_talking', Bool, self.is_talking_callback)
         rospy.Subscriber('event', Event, self.event_callback)
         rospy.Subscriber('head_visible', Bool, self.head_visible_callback)
+        rospy.Subscriber('detected_wake_word', EmptyMsg, self.detected_wake_word_callback)
 
         if not self.disable_audio:
             rospy.Subscriber('sound', AudioData, self.audio_callback)
@@ -141,6 +144,14 @@ class DialogflowNode:
     def is_talking_callback(self, msg):
         """ Callback for text input """
         self.is_talking = msg.data
+
+    def detected_wake_word_callback(self, msg):
+        """ Callback for text input """
+        self.detected_wake_word = True
+        rospy.Timer(rospy.Duration(0.3), self.set_wake_word_false, oneshot=True)
+
+    def set_wake_word_false(self, event):
+        self.detected_wake_word = False
 
     def head_visible_callback(self, msg):
         """ Callback for text input """
@@ -347,23 +358,16 @@ class DialogflowNode:
             rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
             while self.is_talking and not rospy.is_shutdown():
                 rospy.sleep(0.1)
-            rospy.logwarn("VÄNTAR PÅ ANSIKTE!")
-            while not self.head_visible and not rospy.is_shutdown():
+            rospy.logwarn("VÄNTAR PÅ HOT WORD!")
+            while not self.detected_wake_word and not rospy.is_shutdown():
                 rospy.sleep(0.1)
             self.playStartSound()
-            rospy.logwarn("VÄNTAR PÅ HÖGRE LJUDNIVÅ!")
-            while self.volume < self.threshold and not rospy.is_shutdown() and not self.cancel_stream_intent:
-                rospy.sleep(0.1)
             rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
             self.detect_intent_stream()
             self.playStopSound()
             if self.cancel_stream_intent:
                 continue
-            rospy.logwarn("VÄNTAR PÅ ATT ROBOT SKA BÖRJA PRATA!")
-            while not self.is_talking and not rospy.is_shutdown():
-                rospy.sleep(0.1)
-
-            rospy.sleep(0.5)
+            rospy.sleep(0.7)
             
 
 

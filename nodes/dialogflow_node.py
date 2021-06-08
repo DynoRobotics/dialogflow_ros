@@ -58,7 +58,7 @@ class DialogflowNode:
         self.query_text_pub = rospy.Publisher('query_text', String, queue_size=2)
         self.transcript_pub = rospy.Publisher('transcript', String, queue_size=2)
         self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
-        self.is_listening_pub = rospy.Publisher('is_listening', Bool, latch=True)
+        self.is_listening_pub = rospy.Publisher('is_listening', Bool, queue_size=2, latch=True)
         self.volume = 0
         self.is_talking = False
         self.detected_wake_word = False

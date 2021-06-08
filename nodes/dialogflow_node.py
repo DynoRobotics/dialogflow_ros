@@ -349,7 +349,7 @@ class DialogflowNode:
 
     def playStopSound(self):
         self.skip_audio = True
-        self.audio_play_srv("confirm_notlisten.wav","")
+        self.audio_play_srv("confirm_heard.wav","")
         self.skip_audio = False
 
     def run(self):

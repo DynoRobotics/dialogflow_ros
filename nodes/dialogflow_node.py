@@ -54,8 +54,8 @@ class DialogflowNode:
             sample_rate_hertz=sample_rate_hertz,
             single_utterance=True)
 
-        self.query_result_pub = rospy.Publisher('response', Response, queue_size=10)
-        self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
+        self.query_result_pub = rospy.Publisher('response', Response, queue_size=2)
+        self.query_text_pub = rospy.Publisher('query_text', String, queue_size=2)
         self.transcript_pub = rospy.Publisher('transcript', String, queue_size=2)
         self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
         self.is_listening_pub = rospy.Publisher('is_listening', Bool, latch=True)

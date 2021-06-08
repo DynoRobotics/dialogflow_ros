@@ -58,7 +58,7 @@ class DialogflowNode:
         self.query_text_pub = rospy.Publisher('query_text', String, queue_size=10)
         self.transcript_pub = rospy.Publisher('transcript', String, queue_size=2)
         self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
-
+        self.is_listening_pub = rospy.Publisher('is_listening', Bool, latch=True)
         self.volume = 0
         self.is_talking = False
         self.detected_wake_word = False
@@ -362,8 +362,10 @@ class DialogflowNode:
             while not self.detected_wake_word and not rospy.is_shutdown():
                 rospy.sleep(0.1)
             self.playStartSound()
+            self.is_listening_pub.publish(True)
             rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
             self.detect_intent_stream()
+            self.is_listening_pub.publish(False)
             self.playStopSound()
             if self.cancel_stream_intent:
                 continue

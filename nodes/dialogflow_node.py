@@ -156,10 +156,10 @@ class DialogflowNode:
     def head_visible_callback(self, msg):
         """ Callback for text input """
         self.head_visible = msg.data
-        if not self.head_visible:
-            self.cancel_stream_intent = True
-        else:
-            self.cancel_stream_intent = False
+        #if not self.head_visible:
+        #    self.cancel_stream_intent = True
+        #else:
+        #    self.cancel_stream_intent = False
 
     def text_callback(self, text_msg):
         """ Callback for text input """
@@ -367,8 +367,6 @@ class DialogflowNode:
             self.detect_intent_stream()
             self.is_listening_pub.publish(False)
             self.playStopSound()
-            if self.cancel_stream_intent:
-                continue
             rospy.sleep(0.7)
             
 

@@ -75,6 +75,7 @@ class DialogflowNode:
         rospy.Subscriber('event', Event, self.event_callback)
         rospy.Subscriber('head_visible', Bool, self.head_visible_callback)
         rospy.Subscriber('detected_wake_word', EmptyMsg, self.detected_wake_word_callback)
+        rospy.Subscriber('end_of_conversation', EmptyMsg, self.end_of_conversation_callback)
 
         if not self.disable_audio:
             rospy.Subscriber('sound', AudioData, self.audio_callback)
@@ -151,6 +152,9 @@ class DialogflowNode:
         """ Callback for text input """
         self.detected_wake_word = True
         rospy.Timer(rospy.Duration(0.3), self.set_wake_word_false, oneshot=True)
+
+    def end_of_conversation_callback(self, msg):
+        self.end_of_dialog = True
 
     def set_wake_word_false(self, event):
         self.detected_wake_word = False

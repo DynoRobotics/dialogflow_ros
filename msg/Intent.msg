@@ -1,2 +1,3 @@
 string name
 string display_name
+bool end_interaction

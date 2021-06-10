@@ -61,6 +61,7 @@ class DialogflowNode:
         self.is_listening_pub = rospy.Publisher('is_listening', Bool, queue_size=2, latch=True)
         self.volume = 0
         self.is_talking = False
+        self.is_in_dialog = False
         self.detected_wake_word = False
         self.head_visible = False
         self.cancel_stream_intent = False
@@ -164,13 +165,19 @@ class DialogflowNode:
     def text_callback(self, text_msg):
         """ Callback for text input """
         self.query_text_pub.publish(text_msg)
+        self.end_of_dialog = False
         query_result = self.detect_intent_text(text_msg.data)
+        if query_result.intent.end_interaction:
+            self.end_of_dialog = True
         self.publish_response(query_result)
 
     def event_callback(self, event_msg):
         """ Callback for event input """
         rospy.loginfo("Publishing event %s", event_msg.name)
+        self.end_of_dialog = False
         query_result = self.detect_intent_event(event_msg)
+        if query_result.intent.end_interaction:
+            self.end_of_dialog = True
         self.publish_response(query_result)
 
     def publish_response(self, query_result):
@@ -181,6 +188,7 @@ class DialogflowNode:
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
         query_result_msg.intent.display_name = query_result.intent.display_name
         query_result_msg.intent.name = query_result.intent.name
+        query_result_msg.intent.end_interaction = query_result.intent.end_interaction
         query_result_msg.action = query_result.action
 
         if not query_result.fulfillment_text:
@@ -276,7 +284,7 @@ class DialogflowNode:
         """ Send streaming audio to dialogflow and publish response """
         if self.disable_audio:
             return
-        
+        self.end_of_dialog = False
         requests = self.audio_stream_request_generator()
         responses = self.session_client.streaming_detect_intent(requests=requests)
         rospy.loginfo('=' * 10 + " %s " + '=' * 10, self.project_id)
@@ -296,7 +304,8 @@ class DialogflowNode:
         
         # pylint: disable=undefined-loop-variable
         query_result = response.query_result
-
+        if query_result.intent.end_interaction:
+            self.end_of_dialog = True
 
         self.query_text_pub.publish(String(data=query_result.query_text))
 
@@ -354,20 +363,27 @@ class DialogflowNode:
 
     def run(self):
         """ Update straming intents if we are using audio data """
+
         while not rospy.is_shutdown():
-            rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
-            while self.is_talking and not rospy.is_shutdown() and not self.cancel_stream_intent:
-                rospy.sleep(0.1)
             rospy.logwarn("VÄNTAR PÅ HOT WORD!")
             while not self.detected_wake_word and not rospy.is_shutdown():
                 rospy.sleep(0.1)
-            self.playStartSound()
-            self.is_listening_pub.publish(True)
-            rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
-            self.detect_intent_stream()
-            self.is_listening_pub.publish(False)
-            self.playStopSound()
-            rospy.sleep(0.7)
+            while not rospy.is_shutdown():
+                rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
+                while (not self.detected_wake_word and not self.head_visible) and not rospy.is_shutdown():
+                    rospy.sleep(0.1)
+                self.playStartSound()
+                self.is_listening_pub.publish(True)
+                rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
+                self.detect_intent_stream()
+                self.is_listening_pub.publish(False)
+                self.playStopSound()
+                rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
+                while self.is_talking and not rospy.is_shutdown() and not self.cancel_stream_intent:
+                    rospy.sleep(0.1)
+                if self.end_of_dialog:
+                    break
+                rospy.sleep(0.7)
             
 
 

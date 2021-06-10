@@ -59,6 +59,7 @@ class DialogflowNode:
         self.transcript_pub = rospy.Publisher('transcript', String, queue_size=2)
         self.fulfillment_pub = rospy.Publisher('fulfillment_text', String, queue_size=10)
         self.is_listening_pub = rospy.Publisher('is_listening', Bool, queue_size=2, latch=True)
+        self.is_waiting_for_hot_word = rospy.Publisher('waiting_for_hot_word', Bool, queue_size=2, latch=True)
         self.volume = 0
         self.is_talking = False
         self.is_in_dialog = False
@@ -366,12 +367,17 @@ class DialogflowNode:
 
         while not rospy.is_shutdown():
             rospy.logwarn("VÄNTAR PÅ HOT WORD!")
+            self.is_waiting_for_hot_word.publish(True)
             while not self.detected_wake_word and not rospy.is_shutdown():
                 rospy.sleep(0.1)
+            self.is_waiting_for_hot_word.publish(False)
+            
             while not rospy.is_shutdown():
                 rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
+                self.is_waiting_for_hot_word.publish(True)
                 while (not self.detected_wake_word and not self.head_visible) and not rospy.is_shutdown():
                     rospy.sleep(0.1)
+                self.is_waiting_for_hot_word.publish(False)
                 self.playStartSound()
                 self.is_listening_pub.publish(True)
                 rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")

@@ -378,10 +378,8 @@ class DialogflowNode:
             
             while not rospy.is_shutdown():
                 rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
-                self.is_waiting_for_hot_word.publish(True)
                 while (not self.detected_wake_word and not self.head_visible) and not rospy.is_shutdown():
                     rospy.sleep(0.1)
-                self.is_waiting_for_hot_word.publish(False)
                 self.playStartSound()
                 self.is_listening_pub.publish(True)
                 rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")

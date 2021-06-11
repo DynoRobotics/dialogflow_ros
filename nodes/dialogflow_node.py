@@ -31,7 +31,7 @@ class DialogflowNode:
     def __init__(self):
         rospy.init_node('dialogflow_node')
 
-        self.project_id = "qt-mega-agent-txtb"
+        self.project_id = "nymega-fjvv"
         self.session_id = rospy.get_param('~session_id', uuid.uuid4())
         self.language = rospy.get_param('~default_language', 'sv-SE')
         self.disable_audio = rospy.get_param('~disable_audio', False)

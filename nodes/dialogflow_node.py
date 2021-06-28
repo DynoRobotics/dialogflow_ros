@@ -31,8 +31,8 @@ class DialogflowNode:
     def __init__(self):
         rospy.init_node('dialogflow_node')
 
-        location = rospy.get_param('~location','bergs')
-        if location == "bergs":
+        location = rospy.get_param('~location','berg')
+        if location == "berg":
             self.project_id = "dyno-robotics"
         elif location == "stora_torget":
             self.project_id = "qtvisitlinkoping-eirh"

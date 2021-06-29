@@ -50,7 +50,7 @@ class DialogflowNode:
         self.session = self.session_client.session_path(self.project_id, self.session_id)
         rospy.loginfo('Session path: {}\n'.format(self.session))
 
-        self.audio_chunk_queue = deque(maxlen=int(self.time_before_start * 10)) # Times 10 since the data is sent in 10Hz
+        self.audio_chunk_queue = deque(maxlen=int(self.time_before_start * 7.8)) # Times 7.8 since the data is sent in 7.8Hz
 
         # Note: hard coding audio_encoding and sample_rate_hertz for simplicity.
         audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16

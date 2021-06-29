@@ -373,6 +373,30 @@ class DialogflowNode:
         self.audio_play_srv("confirm_heard.wav","")
         self.skip_audio = False
 
+
+    def run_until_sleep(self):
+        while not rospy.is_shutdown():
+            rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
+            start_waiting = time.time()
+            while (not self.detected_wake_word and not self.head_visible) and not rospy.is_shutdown():
+                rospy.sleep(0.1)
+                if time.time() > start_waiting + 7:
+                    rospy.logwarn("TIMEOUT, BACK TO SLEEP")
+                    return
+            self.playStartSound()
+            self.is_listening_pub.publish(True)
+            rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
+            self.detect_intent_stream()
+            self.is_listening_pub.publish(False)
+            self.playStopSound()
+            rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
+            while self.is_talking and not rospy.is_shutdown() and not self.cancel_stream_intent:
+                rospy.sleep(0.1)
+            if self.end_of_dialog:
+                return
+            rospy.sleep(0.7)
+
+        
     def run(self):
         """ Update straming intents if we are using audio data """
 
@@ -382,25 +406,7 @@ class DialogflowNode:
             while not self.detected_wake_word and not rospy.is_shutdown():
                 rospy.sleep(0.1)
             self.is_waiting_for_hot_word.publish(False)
-            
-            while not rospy.is_shutdown():
-                rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
-                while (not self.detected_wake_word and not self.head_visible) and not rospy.is_shutdown():
-                    rospy.sleep(0.1)
-                self.playStartSound()
-                self.is_listening_pub.publish(True)
-                rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
-                self.detect_intent_stream()
-                self.is_listening_pub.publish(False)
-                self.playStopSound()
-                rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
-                while self.is_talking and not rospy.is_shutdown() and not self.cancel_stream_intent:
-                    rospy.sleep(0.1)
-                if self.end_of_dialog:
-                    break
-                rospy.sleep(0.7)
-            
-
+            self.run_until_sleep()
 
 if __name__ == '__main__':
     node = DialogflowNode()

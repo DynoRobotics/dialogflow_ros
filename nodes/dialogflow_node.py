@@ -304,6 +304,7 @@ class DialogflowNode:
             for response in responses:
                 rospy.loginfo('Intermediate transcript: "{}".'.format(
                     response.recognition_result.transcript))
+                response.recognition_result.transcript = response.recognition_result.transcript.replace("Lidköping", "Linköping")
                 self.transcript_pub.publish(response.recognition_result.transcript)
         except exceptions.OutOfRange as exc:
             rospy.logerr("Dialogflow exception. Out of audio quota? "
@@ -316,6 +317,7 @@ class DialogflowNode:
         
         # pylint: disable=undefined-loop-variable
         query_result = response.query_result
+        query_result.query_text = query_result.query_text.replace("Lidköping", "Linköping")
         if query_result.intent.end_interaction:
             self.end_of_dialog = True
 

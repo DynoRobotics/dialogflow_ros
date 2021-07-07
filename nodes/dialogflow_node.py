@@ -12,6 +12,7 @@ License: BSD
 import uuid
 import queue
 import rospy
+import random
 import wave
 import time
 from collections import deque
@@ -365,9 +366,12 @@ class DialogflowNode:
         if self.save_audio_requests:
             wf.close()
 
-    def playStartSound(self):
+    def playStartSound(self, hi=False):
         self.skip_audio = True
-        self.audio_play_srv("confirm_listen.wav","")
+        if hi:
+            self.audio_play_srv(random.choice(["hejsan.wav","halla.wav","tja.wav"]),"")
+        else:
+            self.audio_play_srv("confirm_listen.wav","")
         self.skip_audio = False
 
     def playStopSound(self):
@@ -377,6 +381,7 @@ class DialogflowNode:
 
 
     def run_until_sleep(self):
+        isFirst = True
         while not rospy.is_shutdown():
             rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
             start_waiting = time.time()
@@ -385,7 +390,8 @@ class DialogflowNode:
                 if time.time() > start_waiting + 7:
                     rospy.logwarn("TIMEOUT, BACK TO SLEEP")
                     return
-            self.playStartSound()
+            self.playStartSound(isFirst)
+            isFirst = False
             self.is_listening_pub.publish(True)
             rospy.logwarn("SKICKAR LJUD TILL DIALOGFLOW")
             self.detect_intent_stream()

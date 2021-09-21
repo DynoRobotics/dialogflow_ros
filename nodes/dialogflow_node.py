@@ -147,9 +147,7 @@ class DialogflowNode:
     def handle_clear_context(self, _):
         """ Clear all current contexts """
         contexts_client = dialogflow.ContextsClient()
-        contexts = contexts_client.list_contexts(self.session)
-        for context in contexts:
-            contexts_client.delete_context(context.name)
+        contexts_client.delete_all_contexts(parent=self.session)
         return EmptyResponse()
 
     def is_talking_callback(self, msg):
@@ -163,6 +161,7 @@ class DialogflowNode:
 
     def end_of_conversation_callback(self, msg):
         self.end_of_dialog = True
+        self.handle_clear_context(None)
 
     def set_wake_word_false(self, event):
         self.detected_wake_word = False

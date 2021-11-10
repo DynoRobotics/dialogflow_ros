@@ -24,7 +24,7 @@ from std_msgs.msg import String, Bool, UInt16
 from std_msgs.msg import Empty as EmptyMsg
 from audio_common_msgs.msg import AudioData
 from dialogflow_ros.msg import Response, Event, Context, Parameter
-from qt_robot_interface.srv import audio_play
+from qt_robot_interface.srv import audio_play, speech_config
 from std_srvs.srv import Empty, EmptyResponse
 
 class DialogflowNode:
@@ -41,7 +41,7 @@ class DialogflowNode:
             rospy.logerr("Not valid location: " + location)
             
         session_id = rospy.get_param('~session_id', uuid.uuid4())
-        self.language = rospy.get_param('~default_language', 'sv-SE')
+        self.language = rospy.get_param('~default_language', 'sv') # TODO: Change depending on the hotword language
         self.disable_audio = rospy.get_param('~disable_audio', False)
         self.threshold = rospy.get_param('~threshold', 2000)
         self.time_before_start = rospy.get_param('~time_before_start', 0.5)
@@ -75,12 +75,14 @@ class DialogflowNode:
         self.skip_audio = False
         rospy.wait_for_service('/qt_robot/audio/play')
         self.audio_play_srv = rospy.ServiceProxy('/qt_robot/audio/play', audio_play)
+        rospy.wait_for_service('/qt_robot/speech/config')
+        self.speech_config_srv = rospy.ServiceProxy('/qt_robot/speech/config', speech_config)
 
         rospy.Subscriber('text', String, self.text_callback)
         rospy.Subscriber('is_talking', Bool, self.is_talking_callback)
         rospy.Subscriber('event', Event, self.event_callback)
         rospy.Subscriber('head_visible', Bool, self.head_visible_callback)
-        rospy.Subscriber('detected_wake_word', EmptyMsg, self.detected_wake_word_callback)
+        rospy.Subscriber('detected_wake_word', String, self.detected_wake_word_callback)
         rospy.Subscriber('end_of_conversation', EmptyMsg, self.end_of_conversation_callback)
 
         if not self.disable_audio:
@@ -154,6 +156,18 @@ class DialogflowNode:
 
     def detected_wake_word_callback(self, msg):
         """ Callback for text input """
+        if msg.data == "swedish":
+            self.language = 'sv'
+            self.speech_config_srv("sv_SV", 0, 0)
+        elif msg.data == "english":
+            self.language = 'en'
+            self.speech_config_srv("en-US", 0, 0)
+        else:
+            rospy.logerr("Not valid language: " + msg.data)
+            self.language = 'sv'
+        self.audio_config.language_code = self.language
+        
+
         self.detected_wake_word = True
         rospy.Timer(rospy.Duration(0.3), self.set_wake_word_false, oneshot=True)
 

@@ -33,16 +33,15 @@ class DialogflowNode:
         rospy.init_node('dialogflow_node')
 
         self.project_id = "folke-jkih"
-        session_id = rospy.get_param('~session_id', uuid.uuid4())
-        self.language = rospy.get_param('~default_language', 'sv') # TODO: Change depending on the hotword language
+        self.language = rospy.get_param('~default_language', 'sv')
         self.disable_audio = rospy.get_param('~disable_audio', False)
-        self.threshold = rospy.get_param('~threshold', 2000)
-        self.time_before_start = rospy.get_param('~time_before_start', 0.5)
+        
+        time_before_start = rospy.get_param('~time_before_start', 0.5)
         self.save_audio_requests = rospy.get_param('~save_audio_requests', True)
 
         self.session_client = dialogflow.SessionsClient()
 
-        self.audio_chunk_queue = deque(maxlen=int(self.time_before_start * 7.8)) # Times 7.8 since the data is sent in 7.8Hz
+        self.audio_chunk_queue = deque(maxlen=int(time_before_start * 7.8)) # Times 7.8 since the data is sent in 7.8Hz
 
         # Note: hard coding audio_encoding and sample_rate_hertz for simplicity.
         audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16

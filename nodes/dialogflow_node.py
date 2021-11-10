@@ -18,6 +18,7 @@ import time
 from collections import deque
 from google.cloud import dialogflow
 from google.protobuf import struct_pb2
+from google.type import latlng_pb2
 from google.api_core import exceptions
 
 from std_msgs.msg import String, Bool, UInt16
@@ -33,6 +34,7 @@ class DialogflowNode:
         rospy.init_node('dialogflow_node')
 
         self.project_id = "folke-jkih"
+        self.session_id = str(uuid.uuid4())
         self.language = rospy.get_param('~default_language', 'sv')
         self.disable_audio = rospy.get_param('~disable_audio', False)
         
@@ -40,6 +42,14 @@ class DialogflowNode:
         self.save_audio_requests = rospy.get_param('~save_audio_requests', True)
 
         self.session_client = dialogflow.SessionsClient()
+        
+        self.query_params = dialogflow.QueryParameters(geo_location = latlng_pb2.LatLng(latitude=58.4106611, longitude=15.6198244),
+                                                       contexts = [dialogflow.Context(lifespan_count=100,
+                                                                                      name="projects/"+self.project_id+"/agent/sessions/"+self.session_id+"/contexts/linkoping"
+                                                       )]
+        )
+        
+
 
         self.audio_chunk_queue = deque(maxlen=int(time_before_start * 7.8)) # Times 7.8 since the data is sent in 7.8Hz
 
@@ -335,6 +345,20 @@ class DialogflowNode:
         rospy.loginfo('Fulfillment text: {}\n'.format(
             query_result.fulfillment_text))
 
+        
+        if query_result.intent.display_name == "developer.linkopingMode":
+            self.query_params = dialogflow.QueryParameters(geo_location = latlng_pb2.LatLng(latitude=58.4106611, longitude=15.6198244),
+                                                           contexts = [dialogflow.Context(lifespan_count=100,
+                                                                                         name="projects/"+self.project_id+"/agent/sessions/"+self.session_id+"/contexts/linkoping"
+                                                           )]
+            )
+        elif query_result.intent.display_name == "developer.bergMode":
+            self.query_params = dialogflow.QueryParameters(geo_location = latlng_pb2.LatLng(latitude=58.48548532662494, longitude=15.530466246782007),
+                                                           contexts = [dialogflow.Context(lifespan_count=100,
+                                                                                         name="projects/"+self.project_id+"/agent/sessions/"+self.session_id+"/contexts/berg"
+                                                           )]
+            )
+        
         self.publish_response(query_result)
 
     def audio_stream_request_generator(self):
@@ -343,6 +367,7 @@ class DialogflowNode:
         # The first request contains the configuration.
         yield dialogflow.StreamingDetectIntentRequest(
             session=self.session,
+            query_params=self.query_params,
             query_input=query_input)
 
         # Save data to audio file
@@ -418,7 +443,8 @@ class DialogflowNode:
 
         while not rospy.is_shutdown():
             # Create new session
-            self.session = self.session_client.session_path(self.project_id,  uuid.uuid4())
+            self.session_id = str(uuid.uuid4())
+            self.session = self.session_client.session_path(self.project_id, self.session_id)
             rospy.loginfo('Session path: {}\n'.format(self.session))
             
             rospy.logwarn("VÄNTAR PÅ HOT WORD!")

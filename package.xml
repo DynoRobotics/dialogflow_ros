@@ -16,6 +16,7 @@
   <depend>std_srvs</depend>
   <depend>rospy</depend>
   <depend>audio_common_msgs</depend>
+  <depend>google-cloud-dialogflow</depend>
 
   <exec_depend>roslint</exec_depend>
   

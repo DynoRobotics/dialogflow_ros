@@ -40,7 +40,7 @@ class DialogflowNode:
         else:
             rospy.logerr("Not valid location: " + location)
             
-        self.session_id = rospy.get_param('~session_id', uuid.uuid4())
+        session_id = rospy.get_param('~session_id', uuid.uuid4())
         self.language = rospy.get_param('~default_language', 'sv-SE')
         self.disable_audio = rospy.get_param('~disable_audio', False)
         self.threshold = rospy.get_param('~threshold', 2000)
@@ -48,8 +48,6 @@ class DialogflowNode:
         self.save_audio_requests = rospy.get_param('~save_audio_requests', True)
 
         self.session_client = dialogflow.SessionsClient()
-        self.session = self.session_client.session_path(self.project_id, self.session_id)
-        rospy.loginfo('Session path: {}\n'.format(self.session))
 
         self.audio_chunk_queue = deque(maxlen=int(self.time_before_start * 7.8)) # Times 7.8 since the data is sent in 7.8Hz
 
@@ -413,6 +411,10 @@ class DialogflowNode:
         """ Update straming intents if we are using audio data """
 
         while not rospy.is_shutdown():
+            # Create new session
+            self.session = self.session_client.session_path(self.project_id,  uuid.uuid4())
+            rospy.loginfo('Session path: {}\n'.format(self.session))
+            
             rospy.logwarn("VÄNTAR PÅ HOT WORD!")
             self.is_waiting_for_hot_word.publish(True)
             while not self.detected_wake_word and not rospy.is_shutdown():

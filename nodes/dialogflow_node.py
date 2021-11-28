@@ -38,7 +38,7 @@ class DialogflowNode:
         self.language = rospy.get_param('~default_language', 'sv')
         self.disable_audio = rospy.get_param('~disable_audio', False)
         
-        time_before_start = rospy.get_param('~time_before_start', 0.5)
+        time_before_start = rospy.get_param('~time_before_start', 0.8)
         self.save_audio_requests = rospy.get_param('~save_audio_requests', True)
 
         self.session_client = dialogflow.SessionsClient()
@@ -51,7 +51,7 @@ class DialogflowNode:
         
 
 
-        self.audio_chunk_queue = deque(maxlen=int(time_before_start * 7.8)) # Times 7.8 since the data is sent in 7.8Hz
+        self.audio_chunk_queue = deque(maxlen=int(time_before_start * 31.25))# 16000/512 = 31.25,  # Times 7.8 since the data is sent in 7.8Hz (16000 / 2048)
 
         # Note: hard coding audio_encoding and sample_rate_hertz for simplicity.
         audio_encoding = dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16
@@ -416,6 +416,7 @@ class DialogflowNode:
                 self.audio_play_srv(random.choice(["nihao.wav"]),"")
         else:
             self.audio_play_srv("confirm_listen.wav","")
+            time.sleep(0.1)
         self.skip_audio = False
 
     def playStopSound(self):

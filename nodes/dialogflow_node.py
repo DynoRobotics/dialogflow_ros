@@ -73,6 +73,7 @@ class DialogflowNode:
         self.is_in_dialog = False
         self.detected_wake_word = False
         self.head_visible = False
+        self.waiting_for_wake_word = False
         self.cancel_stream_intent = False
         self.skip_audio = False
         rospy.wait_for_service('/qt_robot/audio/play')
@@ -158,16 +159,24 @@ class DialogflowNode:
 
     def detected_wake_word_callback(self, msg):
         """ Callback for text input """
-        if msg.data == "swedish":
-            self.language = 'sv'
-            self.speech_config_srv("sv_SV", 0, 0)
-        elif msg.data == "english":
-            self.language = 'en'
-            self.speech_config_srv("en-US", 0, 0)
-        else:
-            rospy.logerr("Not valid language: " + msg.data)
-            self.language = 'sv'
-        self.audio_config.language_code = self.language
+        if self.waiting_for_wake_word:
+            if msg.data == "swedish":
+                self.language = 'sv'
+                self.speech_config_srv("sv_SV", 500, 100)
+            elif msg.data == "english":
+                self.language = 'en'
+                self.speech_config_srv("en_US", 150, 80)
+            elif msg.data == "german":
+                self.language = 'de'
+                self.speech_config_srv("de_DE", 150, 100)
+            elif msg.data == "chinese":
+                self.language = 'zh-CN'
+                self.speech_config_srv("zh_MA", 50, 100)
+            else:
+                rospy.logerr("Not valid language: " + msg.data)
+                self.language = 'sv'
+                self.speech_config_srv("sv_SV", 150, 100)
+            self.audio_config.language_code = self.language
         
 
         self.detected_wake_word = True
@@ -449,8 +458,10 @@ class DialogflowNode:
             
             rospy.logwarn("VÄNTAR PÅ HOT WORD!")
             self.is_waiting_for_hot_word.publish(True)
+            self.waiting_for_wake_word = True
             while not self.detected_wake_word and not rospy.is_shutdown():
                 rospy.sleep(0.1)
+            self.waiting_for_wake_word = False
             self.is_waiting_for_hot_word.publish(False)
             self.run_until_sleep()
 

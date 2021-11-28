@@ -447,7 +447,7 @@ class DialogflowNode:
             self.is_listening_pub.publish(False)
             self.playStopSound()
             rospy.logwarn("VÄNTAR PÅ ATT ROBOTEN SKA PRATA KLART!")
-            while self.is_talking and not rospy.is_shutdown() and not self.end_of_dialog:
+            while self.is_talking and not rospy.is_shutdown():
                 rospy.sleep(0.1)
             if self.end_of_dialog:
                 rospy.logwarn("Got end of dialog, return")

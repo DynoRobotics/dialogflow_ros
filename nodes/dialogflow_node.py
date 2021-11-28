@@ -406,7 +406,14 @@ class DialogflowNode:
     def playStartSound(self, hi=False):
         self.skip_audio = True
         if hi:
-            self.audio_play_srv(random.choice(["hejsan.wav","halla.wav","tja.wav"]),"")
+            if self.language == "sv":
+                self.audio_play_srv(random.choice(["hejsan.wav","halla.wav","tja.wav"]),"")
+            elif self.language == "en":
+                self.audio_play_srv(random.choice(["hello.wav"]),"")
+            elif self.language == "de":
+                self.audio_play_srv(random.choice(["hallo.wav"]),"")
+            elif self.language == 'zh-CN':
+                self.audio_play_srv(random.choice(["nihao.wav"]),"")
         else:
             self.audio_play_srv("confirm_listen.wav","")
         self.skip_audio = False

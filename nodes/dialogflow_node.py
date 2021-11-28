@@ -472,6 +472,7 @@ class DialogflowNode:
             self.waiting_for_wake_word = False
             self.is_waiting_for_hot_word.publish(False)
             self.run_until_sleep()
+            rospy.sleep(0.5)
 
 if __name__ == '__main__':
     node = DialogflowNode()

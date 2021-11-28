@@ -436,7 +436,7 @@ class DialogflowNode:
                     rospy.logwarn("TIMEOUT, BACK TO SLEEP")
                     return
                 if self.end_of_dialog:
-                    rospy.logwarn("Got end of dialog, return")
+                    rospy.logwarn("Got end of dialog, return 1")
                     return
 
             self.playStartSound(isFirst)
@@ -450,7 +450,7 @@ class DialogflowNode:
             while self.is_talking and not rospy.is_shutdown():
                 rospy.sleep(0.1)
             if self.end_of_dialog:
-                rospy.logwarn("Got end of dialog, return")
+                rospy.logwarn("Got end of dialog, return 2")
                 return
             rospy.sleep(0.7)
 

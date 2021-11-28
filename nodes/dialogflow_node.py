@@ -221,6 +221,7 @@ class DialogflowNode:
         query_result_msg.project_id = self.project_id
         query_result_msg.query_text = query_result.query_text
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
+        query_result_msg.language_code = query_result.language_code
         query_result_msg.intent.display_name = query_result.intent.display_name
         query_result_msg.intent.name = query_result.intent.name
         query_result_msg.intent.end_interaction = query_result.intent.end_interaction

@@ -428,6 +428,10 @@ class DialogflowNode:
     def run_until_sleep(self):
         isFirst = True
         while not rospy.is_shutdown():
+            self.session_id = str(uuid.uuid4())
+            self.session = self.session_client.session_path(self.project_id, self.session_id)
+            rospy.loginfo('Session path: {}\n'.format(self.session))
+
             rospy.logwarn("VÄNTAR PÅ HOT WORD ELLER FACE!")
             start_waiting = time.time()
             while (not self.detected_wake_word and not self.head_visible) and not rospy.is_shutdown():

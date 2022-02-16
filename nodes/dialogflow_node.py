@@ -225,6 +225,7 @@ class DialogflowNode:
         query_result_msg.intent.display_name = query_result.intent.display_name
         query_result_msg.intent.name = query_result.intent.name
         query_result_msg.intent.end_interaction = query_result.intent.end_interaction
+        query_result_msg.intent.is_fallback = query_result.intent.is_fallback
         query_result_msg.action = query_result.action
 
         if not query_result.fulfillment_text:

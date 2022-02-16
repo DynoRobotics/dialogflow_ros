@@ -1,4 +1,5 @@
 string project_id
+string session_id
 string query_text
 string fulfillment_text
 string action

@@ -219,6 +219,7 @@ class DialogflowNode:
         """ Converts the dialogflow query result to the corresponding ros message """
         query_result_msg = Response()
         query_result_msg.project_id = self.project_id
+        query_result_msg.session_id = self.session_id
         query_result_msg.query_text = query_result.query_text
         query_result_msg.intent_detection_confidence = query_result.intent_detection_confidence
         query_result_msg.language_code = query_result.language_code

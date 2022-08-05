@@ -45,7 +45,7 @@ class DialogflowNode:
         
         self.query_params = dialogflow.QueryParameters(geo_location = latlng_pb2.LatLng(latitude=58.4106611, longitude=15.6198244),
                                                        contexts = [dialogflow.Context(lifespan_count=100,
-                                                                                      name="projects/"+self.project_id+"/agent/sessions/"+self.session_id+"/contexts/linkoping"
+                                                                                      name="projects/"+self.project_id+"/agent/sessions/"+self.session_id+"/contexts/berg"
                                                        )]
         )
         

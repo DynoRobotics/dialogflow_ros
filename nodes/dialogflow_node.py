@@ -74,6 +74,7 @@ class DialogflowNode:
         self.detected_wake_word = False
         self.head_visible = False
         self.waiting_for_wake_word = False
+        self.end_of_dialog = False
         self.cancel_stream_intent = False
         self.skip_audio = False
         rospy.wait_for_service('/qt_robot/audio/play')
